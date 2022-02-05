@@ -111,7 +111,7 @@ function Loading:draw()
     love.graphics.clear()
 
     if (self.animation_phase == 0) then
-        self.siner = self.siner + 1 * dt_mult
+        self.siner = self.siner + 0.5 * dt_mult
         self.factor = self.factor - (0.003 + (self.siner / 900)) * dt_mult
         if (self.factor < 0) then
             self.factor = 0

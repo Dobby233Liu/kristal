@@ -441,7 +441,7 @@ function Menu:draw()
         local mod_name = string.upper(self.selected_mod.name or self.selected_mod.id)
         self:printShadow(mod_name, 16, 8, {1, 1, 1, 1})
     elseif self.state == "CREDITS" then
-        self:printShadow("( OPTIONS )", 0, 48, {1, 1, 1, 1}, true, 640)
+        self:printShadow("( CREDITS )", 0, 48, {1, 1, 1, 1}, true, 640)
         self:printShadow("It just... showed up one day.", 0, 240 - 8 - 16, {1, 1, 1, 1}, true, 640)
         self:printShadow("(Not really. Real page soon.)", 0, 240 - 8 + 16, {0.7, 0.7, 0.7, 1}, true, 640)
     else

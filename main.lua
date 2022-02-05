@@ -534,18 +534,22 @@ function Kristal.errorHandler(msg)
     local split = Utils.split(msg, ": ")
 
     local function draw()
-        local pos = 32
-        local ypos = pos
+        local pos = 16
+        local ypos = 16
         love.graphics.origin()
         love.graphics.clear(0, 0, 0, 1)
         love.graphics.scale(window_scale)
 
         love.graphics.setFont(font)
 
-        local _,lines = font:getWrap("Error at "..split[#split-1].." - "..split[#split], 640 - pos)
+        local _,lines = font:getWrap("Error at "..split[#split-1], 640 - pos)
+        local __,actualErrorLines = smaller_font:getWrap(split[#split], 640 - pos)
 
-        love.graphics.printf({"Error at ", {0.6, 0.6, 0.6, 1}, split[#split-1], {1, 1, 1, 1}, " - " .. split[#split]}, pos, ypos, 640 - pos)
+        love.graphics.printf({"Error at ", {0.6, 0.6, 0.6, 1}, split[#split-1]}, pos, ypos, 640 - pos)
         ypos = ypos + (32 * #lines)
+        love.graphics.setFont(smaller_font)
+        love.graphics.printf({split[#split]}, pos, ypos, 640 - pos)
+        ypos = ypos + (16 * #actualErrorLines)
 
         for l in trace:gmatch("(.-)\n") do
             if not l:match("boot.lua") then
@@ -569,7 +573,7 @@ function Kristal.errorHandler(msg)
             love.graphics.draw(starwalker, 320 - starwalker:getWidth(), 240 - starwalker:getHeight())
             love.graphics.pop()
         else
-            anim_index = anim_index + (DT * 4)
+            anim_index = anim_index + (DT * 2)
             if anim_index >= 8 then
                 anim_index = 1
             end
