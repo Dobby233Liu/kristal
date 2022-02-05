@@ -67,8 +67,6 @@ function DarkTransition:enter(previous, mod, save_id)
     self.has_head_object = false
     self.sparkles = 0
 
-
-
     self.sparestar = Assets.getFrames("effects/spare/star")
 
     self.snd_dtrans_square = Assets.newSound("snd_dtrans_square")
@@ -361,7 +359,6 @@ function DarkTransition:draw(dont_clear)
             self.sprite_index = self.sprite_index + 0.2 * (DT * 30)
         end
         if (math.floor(self.timer) >= 30) and not self.do_once then
-
             --snd_free_all()
             self.do_once = true
             Assets.playSound("snd_locker")
@@ -733,11 +730,11 @@ function DarkTransition:draw(dont_clear)
             --    image_blend = c_black
             --    persistent = true
             --end
+            self.megablack = true
         end
         if (math.floor(self.timer) == 2) then
             --self.megablack.y = 0
         end
-        self.megablack = true
         self.timer = self.timer + 1 * (DT * 30)
         if (self.timer >= 0 and self.timer < 8) then
             self.velocity = self.velocity - 0.5 * (DT * 30)

@@ -16,7 +16,7 @@ function Game:clear()
     --self.console = nil
 end
 
-function Game:enter(previous_state, save_id)
+function Game:enter(previous_state, save_id, transition)
     self.previous_state = previous_state
 
     self.font = Assets.getFont("main")
@@ -58,6 +58,13 @@ function Game:enter(previous_state, save_id)
         self:encounter(Kristal.getModOption("encounter"), false)
     end
 
+    if transition then
+        self.started = false
+        self.lock_input = true
+        self.world.transition_fade = 1
+        self.world.state = "TRANSITION_OUT"
+        self.world.transition_target = {}
+    end
     Kristal.modCall("init")
 end
 

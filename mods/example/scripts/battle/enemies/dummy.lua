@@ -48,6 +48,10 @@ function Dummy:init()
     -- Register party act with Ralsei called "Tell Story"
     -- (second argument is description, usually empty)
     self:registerAct("Tell Story", "", {"ralsei"})
+
+    -- Custom variables
+    -- Set by S-Action cutscene, see below
+    self.punched = false
 end
 
 function Dummy:onAct(battler, name)

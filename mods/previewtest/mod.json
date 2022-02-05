@@ -3,5 +3,7 @@
 
     "quickReload": true,
 
-    "hidden": false
+    "hidden": false,
+
+    "transition": false
 }

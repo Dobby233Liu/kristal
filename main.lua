@@ -25,6 +25,7 @@ Kristal.Shaders = require("src.engine.shaders")
 Kristal.States = {
     ["Loading"] = require("src.engine.loadstate"),
     ["Menu"] = require("src.engine.menu.menu"),
+    ["EnteringGame"] = require("src.engine.game.enterstate"),
     ["Game"] = require("src.engine.game.game"),
     ["DarkTransition"] = require("src.engine.game.darktransition.dark_transition"),
     ["Testing"] = require("src.teststate"),
@@ -761,14 +762,18 @@ function Kristal.loadMod(id, save_id)
 
     if not mod then return end
 
-    if mod.transition then
+    if mod.transition == "dw_enter" then
         Kristal.preloadMod(mod)
         Kristal.loadAssets(mod.path, "sprites", Kristal.States["DarkTransition"].SPRITE_DEPENDENCIES, function()
             Gamestate.switch(Kristal.States["DarkTransition"], mod, save_id)
         end)
+    elseif mod.transition then
+        Kristal.loadModAssets(mod.id, function()
+            Gamestate.switch(Kristal.States["EnteringGame"], save_id)
+        end)
     else
         Kristal.loadModAssets(mod.id, function()
-            Gamestate.switch(Kristal.States["Game"], save_id)
+            Gamestate.switch(Kristal.States["Game"], save_id, mod.transition)
         end)
     end
 end

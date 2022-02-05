@@ -1,5 +1,5 @@
 {
     "name": "Another Example",
-    "transition": true,
+    "transition": "dw_enter",
     "hidden": false
 }
