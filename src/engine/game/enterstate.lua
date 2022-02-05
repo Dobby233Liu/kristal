@@ -23,7 +23,7 @@ end
 function EnteringGame:update(dt)
     -- self.prior_state:update(dt)
 
-    self.fader_alpha = self.fader_alpha + (dt * 4)
+    self.fader_alpha = self.fader_alpha + (dt / 0.25)
 
     if self.fader_alpha >= 1 and self.done then
         Gamestate.switch(Kristal.States["Game"], self.save_id, true)
