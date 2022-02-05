@@ -1,27 +1,26 @@
 local EnteringGame = {}
 
 function EnteringGame:init()
-    self.fader_alpha = 0
-    self.save_id = -1
     self.mod = {}
     self.prior_state = {}
+    self.fader_alpha = 0
+    self.save_id = -1
     self.done = false
-    self.init = false
 end
 
 function EnteringGame:enter(from, mod, save_id)
-    self.done = false
-    self.prior_state = from
     self.mod = mod
+    self.prior_state = from
+    self.fader_alpha = 0
     self.save_id = save_id
-
+    self.done = false
     Kristal.loadModAssets(self.mod.id, function()
         self.done = true
     end)
 end
 
 function EnteringGame:update(dt)
-    -- self.prior_state:update(dt)
+    self.prior_state:update(dt)
 
     self.fader_alpha = self.fader_alpha + (dt / 0.25)
 
