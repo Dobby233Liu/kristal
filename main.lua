@@ -574,7 +574,7 @@ function Kristal.errorHandler(msg)
             love.graphics.draw(starwalker, 320 - starwalker:getWidth(), 240 - starwalker:getHeight())
             love.graphics.pop()
         else
-            anim_index = anim_index + (DT * 2)
+            anim_index = anim_index + DT
             if anim_index >= 8 then
                 anim_index = 1
             end

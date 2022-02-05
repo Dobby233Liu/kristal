@@ -62,7 +62,7 @@ function Game:enter(previous_state, save_id, transition)
         self.started = false
         self.lock_input = true
         self.world.transition_fade = 1
-        self.world.state = "TRANSITION_OUT"
+        self.world.state = "TRANSITION_IN"
         self.world.transition_target = {}
     end
     Kristal.modCall("init")
