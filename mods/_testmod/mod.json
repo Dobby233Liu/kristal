@@ -3,8 +3,8 @@
     "name": "Test Mod",
     "subtitle": "A testing mod full of various stuff and things",
 
-    "version": "v0.0.0",
-    "engineVer": "v0.1.1-beta",
+    "version": "v?.?.?",
+    "engineVer": "v6.9.420",
 
     "chapter": 2,
 

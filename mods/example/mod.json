@@ -13,7 +13,5 @@
     "inventory": {
         "item": ["darkburger", "darkburger", "ultimate_candy"],
         "key": ["cell_phone"]
-    },
-
-    "transition": true
+    }
 }

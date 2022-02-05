@@ -768,9 +768,8 @@ function Kristal.loadMod(id, save_id)
             Gamestate.switch(Kristal.States["DarkTransition"], mod, save_id)
         end)
     elseif mod.transition then
-        Kristal.loadModAssets(mod.id, function()
-            Gamestate.switch(Kristal.States["EnteringGame"], save_id)
-        end)
+        Kristal.preloadMod(mod)
+        Gamestate.switch(Kristal.States["EnteringGame"], mod, save_id)
     else
         Kristal.loadModAssets(mod.id, function()
             Gamestate.switch(Kristal.States["Game"], save_id, mod.transition)

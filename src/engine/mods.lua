@@ -32,6 +32,10 @@ function Mods.loadData(data)
             end
         end
 
+        if mod_data.transition == nil then
+            mod_data.transition = true
+        end
+
         mod_data.script_chunks = {}
         for _,path in ipairs(Utils.getFilesRecursive(mod_data.path, ".lua")) do
             mod_data.script_chunks[path] = love.filesystem.load(mod_data.path.."/"..path..".lua")
