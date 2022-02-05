@@ -363,9 +363,9 @@ function Menu:draw()
         if #modList == 1 then
             local mod = modList[1]
             if mod["useSaves"] or (mod["useSaves"] == nil and not mod["encounter"]) then
-                self:printShadow("Start game", 215, ypos)
-            else
                 self:printShadow("File select", 215, ypos)
+            else
+                self:printShadow("Start game", 215, ypos)
             end
             ypos = ypos + 32
         else
