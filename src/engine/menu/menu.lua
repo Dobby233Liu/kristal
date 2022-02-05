@@ -267,7 +267,7 @@ function Menu:update(dt)
     current_mod = self.selected_mod
 
     -- Update fade between previews
-    if (current_mod and (current_mod.preview or mod_button.preview_script)) then
+    if #Kristal.Mods.getMods() ~= 1 and (current_mod and (current_mod.preview or mod_button.preview_script)) then
         if mod_button.preview_script and mod_button.preview_script.hide_background ~= false then
             self.background_fade = math.max(0, self.background_fade - (dt / 0.5))
         else
@@ -358,11 +358,27 @@ function Menu:draw()
 
     if self.state == "MAINMENU" then
         love.graphics.draw(self.logo, 160, 70)
-        self:printShadow("Play a mod", 215, 219)
-        self:printShadow("Open mods folder", 215, 219 + 32)
-        self:printShadow("Options", 215, 219 + 64)
-        self:printShadow("Credits", 215, 219 + 96)
-        self:printShadow("Quit", 215, 219 + 128)
+        local ypos = 219
+        local modList = Kristal.Mods.getMods()
+        if #modList == 1 then
+            local mod = modList[1]
+            if mod["useSaves"] or (mod["useSaves"] == nil and not mod["encounter"]) then
+                self:printShadow("Start game", 215, ypos)
+            else
+                self:printShadow("File select", 215, ypos)
+            end
+            ypos = ypos + 32
+        else
+            self:printShadow("Play a mod", 215, ypos)
+            ypos = ypos + 32
+            self:printShadow("Open mods folder", 215, ypos)
+            ypos = ypos + 32
+        end
+        self:printShadow("Options", 215, ypos)
+        ypos = ypos + 32
+        self:printShadow("Credits", 215, ypos)
+        ypos = ypos + 32
+        self:printShadow("Quit", 215, ypos)
     elseif self.state == "OPTIONS" or self.state == "VOLUME" or self.state == "WINDOWSCALE" then
 
         self:printShadow("( OPTIONS )", 0, 48, {1, 1, 1, 1}, true, 640)
@@ -547,20 +563,31 @@ function Menu:keypressed(key, _, is_repeat)
         if Input.isConfirm(key) then
             self.ui_select:stop()
             self.ui_select:play()
+            local single_mod = (#Kristal.Mods.getMods() == 1)
+            local option_dec = single_mod and 1 or 0
             if self.selected_option == 1 then
-                self:setState("MODSELECT")
-            elseif self.selected_option == 2 then
+                if single_mod then
+                    self.selected_mod = Kristal.Mods.getMods()[1]
+                    if self.selected_mod["useSaves"] or (self.selected_mod["useSaves"] == nil and not self.selected_mod["encounter"]) then
+                        self:setState("FILESELECT")
+                    else
+                        Kristal.loadMod(self.selected_mod.id)
+                    end
+                else
+                    self:setState("MODSELECT")
+                end
+            elseif not single_mod and self.selected_option == 2 then
                 love.system.openURL("file://"..love.filesystem.getSaveDirectory().."/mods")
-            elseif self.selected_option == 3 then
+            elseif self.selected_option == 3 - option_dec then
                 self.heart_target_x = 152
                 self.heart_target_y = 129
                 self.selected_option = 1
                 self:setState("OPTIONS")
-            elseif self.selected_option == 4 then
+            elseif self.selected_option == 4 - option_dec then
                 self.heart_target_x = -8
                 self.heart_target_y = -8
                 self:setState("CREDITS")
-            elseif self.selected_option == 5 then
+            elseif self.selected_option == 5 - option_dec then
                 love.event.quit()
             end
             return
@@ -585,8 +612,8 @@ function Menu:keypressed(key, _, is_repeat)
             self.ui_move:stop()
             self.ui_move:play()
             self.heart_target_x = 196
-            self.selected_option = 3
-            self.heart_target_y = 238 + (2 * 32)
+            self.selected_option = 3 - (#Kristal.Mods.getMods() == 1 and 1 or 0)
+            self.heart_target_y = 238 + ((self.selected_option - 1) * 32)
             Kristal.saveConfig()
             return
         end
@@ -735,8 +762,8 @@ function Menu:keypressed(key, _, is_repeat)
             self.ui_move:stop()
             self.ui_move:play()
             self.heart_target_x = 196
-            self.selected_option = 4
-            self.heart_target_y = 238 + (3 * 32)
+            self.selected_option = 4 - (#Kristal.Mods.getMods() == 1 and 1 or 0)
+            self.heart_target_y = 238 + ((self.selected_option - 1) * 32)
         end
     elseif self.state == "CONTROLS" then
         if (not self.rebinding) and (not self.selecting_key) then
