@@ -44,7 +44,11 @@ function Menu:enter()
     -- Initialize variables for the menu
     self.stage = Object()
 
-    self.list = nil
+    self.list = ModList(69, 70, 502, 370)
+    self.list.active = false
+    self.list.visible = false
+    self.list.layer = 50
+    self.stage:addChild(self.list)
 
     self.files = nil
 
@@ -80,6 +84,11 @@ function Menu:enter()
     self.selected_bind = 1
 
     self.noise_timer = 0
+
+    self.has_target_saves = false
+    self.target_mod_offset = TARGET_MOD and 1 or 0
+
+    self:buildMods()
 end
 
 function Menu:setState(state)
@@ -90,9 +99,6 @@ end
 
 function Menu:onStateChange(old_state, new_state)
     if old_state == "MODSELECT" then
-        --self.list:clearMods()
-        --self.list:remove()
-        --self.list = nil
         self.list.active = false
         self.list.visible = false
     elseif old_state == "FILESELECT" then
@@ -102,15 +108,8 @@ function Menu:onStateChange(old_state, new_state)
         self.selected_mod_button = nil
         self.selected_mod = nil
     elseif new_state == "MODSELECT" then
-        if not self.list then
-            self.list = ModList(69, 70, 502, 370)
-            self.list.layer = 50
-            self.stage:addChild(self.list)
-            self:buildMods()
-        else
-            self.list.active = true
-            self.list.visible = true
-        end
+        self.list.active = true
+        self.list.visible = true
         self.intro_text = {{1, 1, 1, 1}, "Welcome to Kristal,\nthe DELTARUNE fangame engine!\n\nAdd mods to the ", {1, 1, 0, 1}, "mods folder", {1, 1, 1, 1}, "\nto continue.\n\nPress "..Input.getText("cancel").." to return to the main menu."}
     elseif new_state == "FILESELECT" then
         self.files = FileList(self, self.selected_mod)
@@ -217,8 +216,8 @@ function Menu:buildMods()
             end
         end
 
-        if mod.has_preview_lua then
-            local chunk = love.filesystem.load(mod.path.."/preview.lua")
+        if mod.preview_script_path then
+            local chunk = love.filesystem.load(mod.preview_script_path)
             local success, result = pcall(chunk, mod.path)
             if success then
                 self.mod_fades[mod.id] = self.mod_fades[mod.id] or {fade = 0}
@@ -236,6 +235,16 @@ function Menu:buildMods()
         end
     end
     self.last_loaded = love.filesystem.getDirectoryItems("mods")
+
+    if TARGET_MOD then
+        local _,index = self.list:getById(TARGET_MOD)
+        if not index then
+            error("No mod found: "..TARGET_MOD)
+        else
+            self.list:select(index, true)
+        end
+        self.has_target_saves = Kristal.hasAnySaves(TARGET_MOD)
+    end
 end
 
 function Menu:drawAnimStrip(sprite, subimg, x, y, alpha)
@@ -259,7 +268,7 @@ end
 
 function Menu:update(dt)
     local mod_button, current_mod
-    if self.list and self.state == "MODSELECT" then
+    if self.state == "MODSELECT" or TARGET_MOD then
         self.selected_mod_button = self.list:getSelected()
         self.selected_mod = self.list:getSelectedMod()
     end
@@ -290,13 +299,11 @@ function Menu:update(dt)
     end
 
     -- Update preview scripts
-    if self.list then
-        for k,v in pairs(self.list.mods) do
-            if v.preview_script then
-                v.preview_script.fade = self.mod_fades[v.id].fade
-                v.preview_script.selected = v.selected
-                v.preview_script:update(dt)
-            end
+    for k,v in pairs(self.list.mods) do
+        if v.preview_script then
+            v.preview_script.fade = self.mod_fades[v.id].fade
+            v.preview_script.selected = v.selected
+            v.preview_script:update(dt)
         end
     end
 
@@ -357,6 +364,7 @@ function Menu:draw()
     self:drawVersion()
 
     if self.state == "MAINMENU" then
+<<<<<<< HEAD
         love.graphics.draw(self.logo, 160, 70)
         local ypos = 219
         local modList = Kristal.Mods.getMods()
@@ -379,6 +387,29 @@ function Menu:draw()
         self:printShadow("Credits", 215, ypos)
         ypos = ypos + 32
         self:printShadow("Quit", 215, ypos)
+=======
+        local logo_img = self.selected_mod and self.selected_mod.logo or self.logo
+
+        love.graphics.draw(logo_img, SCREEN_WIDTH/2 - logo_img:getWidth()/2, 105 - logo_img:getHeight()/2)
+        --love.graphics.draw(self.selected_mod and self.selected_mod.logo or self.logo, 160, 70)
+
+        if TARGET_MOD then
+            if self.has_target_saves then
+                self:printShadow("Load game", 215, 219)
+            else
+                self:printShadow("Start game", 215, 219)
+            end
+            self:printShadow("Options", 215, 219 + 32)
+            self:printShadow("Credits", 215, 219 + 64)
+            self:printShadow("Quit", 215, 219 + 96)
+        else
+            self:printShadow("Play a mod", 215, 219)
+            self:printShadow("Open mods folder", 215, 219 + 32)
+            self:printShadow("Options", 215, 219 + 64)
+            self:printShadow("Credits", 215, 219 + 96)
+            self:printShadow("Quit", 215, 219 + 128)
+        end
+>>>>>>> upstream/main
     elseif self.state == "OPTIONS" or self.state == "VOLUME" or self.state == "WINDOWSCALE" then
 
         self:printShadow("( OPTIONS )", 0, 48, {1, 1, 1, 1}, true, 640)
@@ -465,13 +496,11 @@ function Menu:draw()
     end
 
     -- Draw mod preview overlays
-    if self.list then
-        for k,v in pairs(self.list.mods) do
-            if v.preview_script and v.preview_script.drawOverlay then
-                love.graphics.push()
-                v.preview_script:drawOverlay()
-                love.graphics.pop()
-            end
+    for k,v in pairs(self.list.mods) do
+        if v.preview_script and v.preview_script.drawOverlay then
+            love.graphics.push()
+            v.preview_script:drawOverlay()
+            love.graphics.pop()
         end
     end
 
@@ -492,26 +521,40 @@ function Menu:drawVersion()
     local ver_string = "v"..tostring(Kristal.Version)
     local ver_y = SCREEN_HEIGHT - self.small_font:getHeight()
 
-    if self.state == "MAINMENU" and Kristal.Version.major == 0 then
-        ver_string = ver_string .. " (Unstable)"
-    end
+    if not TARGET_MOD then
 
-    love.graphics.setFont(self.small_font)
-    love.graphics.setColor(1, 1, 1, 0.5)
-    love.graphics.print(ver_string, 4, ver_y)
-
-    if self.selected_mod_button then
-        local compatible, mod_version = self.selected_mod_button:checkCompatibility()
-        if not compatible then
-            love.graphics.setColor(1, 0.5, 0.5, 0.75)
-            local op = "/"
-            if Kristal.Version < mod_version then
-                op = "<"
-            elseif Kristal.Version > mod_version then
-                op = ">"
-            end
-            love.graphics.print(" "..op.." v"..tostring(mod_version), 4 + self.small_font:getWidth(ver_string), ver_y)
+        if self.state == "MAINMENU" and Kristal.Version.major == 0 then
+            ver_string = ver_string .. " (Unstable)"
         end
+
+        love.graphics.setFont(self.small_font)
+        love.graphics.setColor(1, 1, 1, 0.5)
+        love.graphics.print(ver_string, 4, ver_y)
+
+        if self.selected_mod_button then
+            local compatible, mod_version = self.selected_mod_button:checkCompatibility()
+            if not compatible then
+                love.graphics.setColor(1, 0.5, 0.5, 0.75)
+                local op = "/"
+                if Kristal.Version < mod_version then
+                    op = "<"
+                elseif Kristal.Version > mod_version then
+                    op = ">"
+                end
+                love.graphics.print(" "..op.." v"..tostring(mod_version), 4 + self.small_font:getWidth(ver_string), ver_y)
+            end
+        end
+    else
+        local full_ver = "Kristal: "..ver_string
+
+        if self.selected_mod.version then
+            ver_y = ver_y - self.small_font:getHeight()
+            full_ver = self.selected_mod.name..": "..self.selected_mod.version.."\n"..full_ver
+        end
+
+        love.graphics.setFont(self.small_font)
+        love.graphics.setColor(1, 1, 1, 0.5)
+        love.graphics.print(full_ver, 4, ver_y)
     end
 
     love.graphics.setColor(1, 1, 1)
@@ -566,6 +609,7 @@ function Menu:keypressed(key, _, is_repeat)
             local single_mod = (#Kristal.Mods.getMods() == 1)
             local option_dec = single_mod and 1 or 0
             if self.selected_option == 1 then
+<<<<<<< HEAD
                 if single_mod then
                     self.selected_mod = Kristal.Mods.getMods()[1]
                     if self.selected_mod["useSaves"] or (self.selected_mod["useSaves"] == nil and not self.selected_mod["encounter"]) then
@@ -579,15 +623,35 @@ function Menu:keypressed(key, _, is_repeat)
             elseif not single_mod and self.selected_option == 2 then
                 love.system.openURL("file://"..love.filesystem.getSaveDirectory().."/mods")
             elseif self.selected_option == 3 - option_dec then
+=======
+                if not TARGET_MOD then
+                    self:setState("MODSELECT")
+                elseif self.has_target_saves then
+                    self:setState("FILESELECT")
+                else
+                    Kristal.loadMod(TARGET_MOD, 1)
+                end
+            elseif self.selected_option == 2 and not TARGET_MOD then
+                love.system.openURL("file://"..love.filesystem.getSaveDirectory().."/mods")
+            elseif self.selected_option == 3 - self.target_mod_offset then
+>>>>>>> upstream/main
                 self.heart_target_x = 152
                 self.heart_target_y = 129
                 self.selected_option = 1
                 self:setState("OPTIONS")
+<<<<<<< HEAD
             elseif self.selected_option == 4 - option_dec then
                 self.heart_target_x = -8
                 self.heart_target_y = -8
                 self:setState("CREDITS")
             elseif self.selected_option == 5 - option_dec then
+=======
+            elseif self.selected_option == 4 - self.target_mod_offset then
+                self.heart_target_x = -8
+                self.heart_target_y = -8
+                self:setState("CREDITS")
+            elseif self.selected_option == 5 - self.target_mod_offset then
+>>>>>>> upstream/main
                 love.event.quit()
             end
             return
@@ -597,7 +661,7 @@ function Menu:keypressed(key, _, is_repeat)
         if Input.is("down" , key) then self.selected_option = self.selected_option + 1 end
         if Input.is("left" , key) then self.selected_option = self.selected_option - 1 end
         if Input.is("right", key) then self.selected_option = self.selected_option + 1 end
-        self.selected_option = math.max(1, math.min(5, self.selected_option))
+        self.selected_option = math.max(1, math.min(TARGET_MOD and 4 or 5, self.selected_option))
 
         if old ~= self.selected_option then
             self.ui_move:stop()
@@ -612,8 +676,13 @@ function Menu:keypressed(key, _, is_repeat)
             self.ui_move:stop()
             self.ui_move:play()
             self.heart_target_x = 196
+<<<<<<< HEAD
             self.selected_option = 3 - (#Kristal.Mods.getMods() == 1 and 1 or 0)
             self.heart_target_y = 238 + ((self.selected_option - 1) * 32)
+=======
+            self.selected_option = 3 - self.target_mod_offset
+            self.heart_target_y = 238 + (2 - self.target_mod_offset) * 32
+>>>>>>> upstream/main
             Kristal.saveConfig()
             return
         end
@@ -762,8 +831,13 @@ function Menu:keypressed(key, _, is_repeat)
             self.ui_move:stop()
             self.ui_move:play()
             self.heart_target_x = 196
+<<<<<<< HEAD
             self.selected_option = 4 - (#Kristal.Mods.getMods() == 1 and 1 or 0)
             self.heart_target_y = 238 + ((self.selected_option - 1) * 32)
+=======
+            self.selected_option = 4 - self.target_mod_offset
+            self.heart_target_y = 238 + (3 - self.target_mod_offset) * 32
+>>>>>>> upstream/main
         end
     elseif self.state == "CONTROLS" then
         if (not self.rebinding) and (not self.selecting_key) then
@@ -886,61 +960,61 @@ function Menu:drawBackground()
         self.background_alpha = 0.5
     end
 
-    -- We need to draw the background on a canvas
-    Draw.setCanvas(self.bg_canvas)
-    love.graphics.clear(0, 0, 0, 1)
+    if not (TARGET_MOD and self.selected_mod.preview) then
+        -- We need to draw the background on a canvas
+        Draw.setCanvas(self.bg_canvas)
+        love.graphics.clear(0, 0, 0, 1)
 
-    -- Set the shader to use
-    love.graphics.setShader(self.BACKGROUND_SHADER)
-    self.BACKGROUND_SHADER:send("bg_sine", self.animation_sine)
-    self.BACKGROUND_SHADER:send("bg_mag", 6)
-    self.BACKGROUND_SHADER:send("wave_height", 240)
-    self.BACKGROUND_SHADER:send("texsize", {self.background_image_wave:getWidth(), self.background_image_wave:getHeight()})
+        -- Set the shader to use
+        love.graphics.setShader(self.BACKGROUND_SHADER)
+        self.BACKGROUND_SHADER:send("bg_sine", self.animation_sine)
+        self.BACKGROUND_SHADER:send("bg_mag", 6)
+        self.BACKGROUND_SHADER:send("wave_height", 240)
+        self.BACKGROUND_SHADER:send("texsize", {self.background_image_wave:getWidth(), self.background_image_wave:getHeight()})
 
-    self.BACKGROUND_SHADER:send("sine_mul", 1)
-    love.graphics.setColor(1, 1, 1, self.background_alpha * 0.8)
-    love.graphics.draw(self.background_image_wave, 0, math.floor(-10 - (self.background_alpha * 20)))
-    self.BACKGROUND_SHADER:send("sine_mul", -1)
-    love.graphics.draw(self.background_image_wave, 0, math.floor(-10 - (self.background_alpha * 20)))
-    love.graphics.setColor(1, 1, 1, 1)
+        self.BACKGROUND_SHADER:send("sine_mul", 1)
+        love.graphics.setColor(1, 1, 1, self.background_alpha * 0.8)
+        love.graphics.draw(self.background_image_wave, 0, math.floor(-10 - (self.background_alpha * 20)))
+        self.BACKGROUND_SHADER:send("sine_mul", -1)
+        love.graphics.draw(self.background_image_wave, 0, math.floor(-10 - (self.background_alpha * 20)))
+        love.graphics.setColor(1, 1, 1, 1)
 
-    love.graphics.setShader()
+        love.graphics.setShader()
 
-    self:drawAnimStrip(self.background_image_animation, ( self.animation_sine / 12),        0, (((10 - (self.background_alpha * 20)) + 240) - 70), (self.background_alpha * 0.46))
-    self:drawAnimStrip(self.background_image_animation, ((self.animation_sine / 12) + 0.4), 0, (((10 - (self.background_alpha * 20)) + 240) - 70), (self.background_alpha * 0.56))
-    self:drawAnimStrip(self.background_image_animation, ((self.animation_sine / 12) + 0.8), 0, (((10 - (self.background_alpha * 20)) + 240) - 70), (self.background_alpha * 0.7))
+        self:drawAnimStrip(self.background_image_animation, ( self.animation_sine / 12),        0, (((10 - (self.background_alpha * 20)) + 240) - 70), (self.background_alpha * 0.46))
+        self:drawAnimStrip(self.background_image_animation, ((self.animation_sine / 12) + 0.4), 0, (((10 - (self.background_alpha * 20)) + 240) - 70), (self.background_alpha * 0.56))
+        self:drawAnimStrip(self.background_image_animation, ((self.animation_sine / 12) + 0.8), 0, (((10 - (self.background_alpha * 20)) + 240) - 70), (self.background_alpha * 0.7))
 
-    -- Reset canvas to draw to
-    Draw.setCanvas(SCREEN_CANVAS)
+        -- Reset canvas to draw to
+        Draw.setCanvas(SCREEN_CANVAS)
 
-    -- Draw the canvas on the screen scaled by 2x
-    love.graphics.setColor(1, 1, 1, self.background_fade)
-    love.graphics.draw(self.bg_canvas, 0, 0, 0, 2, 2)
+        -- Draw the canvas on the screen scaled by 2x
+        love.graphics.setColor(1, 1, 1, self.background_fade)
+        love.graphics.draw(self.bg_canvas, 0, 0, 0, 2, 2)
+    end
 
     -- Draw mod previews
-    if self.list then
-        for k,v in pairs(self.list.mods) do
-            local mod_preview = self.mod_fades[v.id]
-            if v.mod and v.mod.preview and mod_preview.fade > 0 then
-                -- Draw to the mod's preview canvas
-                Draw.setCanvas(mod_preview.canvas)
-                love.graphics.clear(0, 0, 0, 1)
+    for k,v in pairs(self.list.mods) do
+        local mod_preview = self.mod_fades[v.id]
+        if v.mod and v.mod.preview and mod_preview.fade > 0 then
+            -- Draw to the mod's preview canvas
+            Draw.setCanvas(mod_preview.canvas)
+            love.graphics.clear(0, 0, 0, 1)
 
-                self:drawAnimStrip(v.mod.preview, ( self.animation_sine / 12),        0, (10 - (self.background_alpha * 20)), (self.background_alpha * 0.46))
-                self:drawAnimStrip(v.mod.preview, ((self.animation_sine / 12) + 0.4), 0, (10 - (self.background_alpha * 20)), (self.background_alpha * 0.56))
-                self:drawAnimStrip(v.mod.preview, ((self.animation_sine / 12) + 0.8), 0, (10 - (self.background_alpha * 20)), (self.background_alpha * 0.7))
+            self:drawAnimStrip(v.mod.preview, ( self.animation_sine / 12),        0, (10 - (self.background_alpha * 20)), (self.background_alpha * 0.46))
+            self:drawAnimStrip(v.mod.preview, ((self.animation_sine / 12) + 0.4), 0, (10 - (self.background_alpha * 20)), (self.background_alpha * 0.56))
+            self:drawAnimStrip(v.mod.preview, ((self.animation_sine / 12) + 0.8), 0, (10 - (self.background_alpha * 20)), (self.background_alpha * 0.7))
 
-                -- Draw canvas scaled 2x to the screen
-                Draw.setCanvas(SCREEN_CANVAS)
-                love.graphics.setColor(1, 1, 1, mod_preview.fade)
-                love.graphics.draw(mod_preview.canvas, 0, 0, 0, 2, 2)
-            end
-            if v.preview_script and v.preview_script.draw then
-                -- Draw from the mod's preview script
-                love.graphics.push()
-                v.preview_script:draw()
-                love.graphics.pop()
-            end
+            -- Draw canvas scaled 2x to the screen
+            Draw.setCanvas(SCREEN_CANVAS)
+            love.graphics.setColor(1, 1, 1, mod_preview.fade)
+            love.graphics.draw(mod_preview.canvas, 0, 0, 0, 2, 2)
+        end
+        if v.preview_script and v.preview_script.draw then
+            -- Draw from the mod's preview script
+            love.graphics.push()
+            v.preview_script:draw()
+            love.graphics.pop()
         end
     end
 

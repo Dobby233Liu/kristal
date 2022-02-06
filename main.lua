@@ -869,6 +869,11 @@ function Kristal.getSaveFile(id, path)
     end
 end
 
+function Kristal.hasAnySaves(path)
+    local path = "saves/"..(path or Mod.info.id)
+    return love.filesystem.getInfo(path) and (#love.filesystem.getDirectoryItems(path) > 0)
+end
+
 function Kristal.saveData(file, data, path)
     love.filesystem.createDirectory("saves/"..(path or Mod.info.id))
     love.filesystem.write("saves/"..(path or Mod.info.id).."/"..file..".json", JSON.encode(data or {}))
@@ -925,4 +930,18 @@ function Kristal.clearModSubclasses()
         end
     end
     MOD_SUBCLASSES = {}
+end
+
+rawRequire = require
+function require(path, ...)
+    if Mod then
+        path = path:gsub("%.", "/")
+        local success, result = Kristal.executeModScript(path, ...)
+        if not success then
+            error("No script found: "..path)
+        end
+        return result
+    else
+        rawRequire(path, ...)
+    end
 end

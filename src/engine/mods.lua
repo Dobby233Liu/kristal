@@ -31,6 +31,9 @@ function Mods.loadData(data)
                 table.insert(mod_data.icon, love.graphics.newImage(img_data))
             end
         end
+        if mod_data.logo_data then
+            mod_data.logo = love.graphics.newImage(mod_data.logo_data)
+        end
 
         if mod_data.transition == nil then
             mod_data.transition = true
