@@ -276,7 +276,7 @@ function Menu:update(dt)
     current_mod = self.selected_mod
 
     -- Update fade between previews
-    if #Kristal.Mods.getMods() ~= 1 and (current_mod and (current_mod.preview or mod_button.preview_script)) then
+    if (current_mod and (current_mod.preview or mod_button.preview_script)) then
         if mod_button.preview_script and mod_button.preview_script.hide_background ~= false then
             self.background_fade = math.max(0, self.background_fade - (dt / 0.5))
         else
@@ -364,30 +364,6 @@ function Menu:draw()
     self:drawVersion()
 
     if self.state == "MAINMENU" then
-<<<<<<< HEAD
-        love.graphics.draw(self.logo, 160, 70)
-        local ypos = 219
-        local modList = Kristal.Mods.getMods()
-        if #modList == 1 then
-            local mod = modList[1]
-            if mod["useSaves"] or (mod["useSaves"] == nil and not mod["encounter"]) then
-                self:printShadow("File select", 215, ypos)
-            else
-                self:printShadow("Start game", 215, ypos)
-            end
-            ypos = ypos + 32
-        else
-            self:printShadow("Play a mod", 215, ypos)
-            ypos = ypos + 32
-            self:printShadow("Open mods folder", 215, ypos)
-            ypos = ypos + 32
-        end
-        self:printShadow("Options", 215, ypos)
-        ypos = ypos + 32
-        self:printShadow("Credits", 215, ypos)
-        ypos = ypos + 32
-        self:printShadow("Quit", 215, ypos)
-=======
         local logo_img = self.selected_mod and self.selected_mod.logo or self.logo
 
         love.graphics.draw(logo_img, SCREEN_WIDTH/2 - logo_img:getWidth()/2, 105 - logo_img:getHeight()/2)
@@ -409,7 +385,6 @@ function Menu:draw()
             self:printShadow("Credits", 215, 219 + 96)
             self:printShadow("Quit", 215, 219 + 128)
         end
->>>>>>> upstream/main
     elseif self.state == "OPTIONS" or self.state == "VOLUME" or self.state == "WINDOWSCALE" then
 
         self:printShadow("( OPTIONS )", 0, 48, {1, 1, 1, 1}, true, 640)
@@ -488,7 +463,7 @@ function Menu:draw()
         local mod_name = string.upper(self.selected_mod.name or self.selected_mod.id)
         self:printShadow(mod_name, 16, 8, {1, 1, 1, 1})
     elseif self.state == "CREDITS" then
-        self:printShadow("( CREDITS )", 0, 48, {1, 1, 1, 1}, true, 640)
+        self:printShadow("( OPTIONS )", 0, 48, {1, 1, 1, 1}, true, 640)
         self:printShadow("It just... showed up one day.", 0, 240 - 8 - 16, {1, 1, 1, 1}, true, 640)
         self:printShadow("(Not really. Real page soon.)", 0, 240 - 8 + 16, {0.7, 0.7, 0.7, 1}, true, 640)
     else
@@ -606,24 +581,7 @@ function Menu:keypressed(key, _, is_repeat)
         if Input.isConfirm(key) then
             self.ui_select:stop()
             self.ui_select:play()
-            local single_mod = (#Kristal.Mods.getMods() == 1)
-            local option_dec = single_mod and 1 or 0
             if self.selected_option == 1 then
-<<<<<<< HEAD
-                if single_mod then
-                    self.selected_mod = Kristal.Mods.getMods()[1]
-                    if self.selected_mod["useSaves"] or (self.selected_mod["useSaves"] == nil and not self.selected_mod["encounter"]) then
-                        self:setState("FILESELECT")
-                    else
-                        Kristal.loadMod(self.selected_mod.id)
-                    end
-                else
-                    self:setState("MODSELECT")
-                end
-            elseif not single_mod and self.selected_option == 2 then
-                love.system.openURL("file://"..love.filesystem.getSaveDirectory().."/mods")
-            elseif self.selected_option == 3 - option_dec then
-=======
                 if not TARGET_MOD then
                     self:setState("MODSELECT")
                 elseif self.has_target_saves then
@@ -634,24 +592,15 @@ function Menu:keypressed(key, _, is_repeat)
             elseif self.selected_option == 2 and not TARGET_MOD then
                 love.system.openURL("file://"..love.filesystem.getSaveDirectory().."/mods")
             elseif self.selected_option == 3 - self.target_mod_offset then
->>>>>>> upstream/main
                 self.heart_target_x = 152
                 self.heart_target_y = 129
                 self.selected_option = 1
                 self:setState("OPTIONS")
-<<<<<<< HEAD
-            elseif self.selected_option == 4 - option_dec then
-                self.heart_target_x = -8
-                self.heart_target_y = -8
-                self:setState("CREDITS")
-            elseif self.selected_option == 5 - option_dec then
-=======
             elseif self.selected_option == 4 - self.target_mod_offset then
                 self.heart_target_x = -8
                 self.heart_target_y = -8
                 self:setState("CREDITS")
             elseif self.selected_option == 5 - self.target_mod_offset then
->>>>>>> upstream/main
                 love.event.quit()
             end
             return
@@ -676,13 +625,8 @@ function Menu:keypressed(key, _, is_repeat)
             self.ui_move:stop()
             self.ui_move:play()
             self.heart_target_x = 196
-<<<<<<< HEAD
-            self.selected_option = 3 - (#Kristal.Mods.getMods() == 1 and 1 or 0)
-            self.heart_target_y = 238 + ((self.selected_option - 1) * 32)
-=======
             self.selected_option = 3 - self.target_mod_offset
             self.heart_target_y = 238 + (2 - self.target_mod_offset) * 32
->>>>>>> upstream/main
             Kristal.saveConfig()
             return
         end
@@ -831,13 +775,8 @@ function Menu:keypressed(key, _, is_repeat)
             self.ui_move:stop()
             self.ui_move:play()
             self.heart_target_x = 196
-<<<<<<< HEAD
-            self.selected_option = 4 - (#Kristal.Mods.getMods() == 1 and 1 or 0)
-            self.heart_target_y = 238 + ((self.selected_option - 1) * 32)
-=======
             self.selected_option = 4 - self.target_mod_offset
             self.heart_target_y = 238 + (3 - self.target_mod_offset) * 32
->>>>>>> upstream/main
         end
     elseif self.state == "CONTROLS" then
         if (not self.rebinding) and (not self.selecting_key) then

@@ -182,22 +182,12 @@ function FileList:keypressed(key)
         end
     elseif self.state == "SELECT" then
         if Input.is("cancel", key) then
-<<<<<<< HEAD
-            if #Kristal.Mods.getMods() == 1 then
-                self.menu.heart_target_x = 196
-                self.menu.heart_target_y = 238
-                self.menu.selected_option = 1
-                self.menu:setState("MAINMENU")
-            else
-                self.menu:setState("MODSELECT")
-=======
             if not TARGET_MOD then
                 self.menu:setState("MODSELECT")
             else
                 self.menu:setState("MAINMENU")
                 self.menu.heart_target_x = 196
                 self.menu.heart_target_y = 238
->>>>>>> upstream/main
             end
             self.ui_cancel:stop()
             self.ui_cancel:play()
