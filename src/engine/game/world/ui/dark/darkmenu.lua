@@ -110,10 +110,10 @@ function DarkMenu:partySelect(mode, after)
     self:updateSelectedBoxes()
 end
 
-function DarkMenu:keypressed(key)
+function DarkMenu:onKeyPressed(key)
     if self.box then
-        if self.box.keypressed then
-            self.box:keypressed(key)
+        if self.box.onKeyPressed then
+            self.box:onKeyPressed(key)
         end
     end
 
@@ -274,7 +274,7 @@ end
 
 function DarkMenu:draw()
     -- Draw the black background
-    love.graphics.setColor(0, 0, 0, 1)
+    love.graphics.setColor(PALETTE["world_fill"])
     love.graphics.rectangle("fill", 0, 0, 640, 80)
 
     love.graphics.setColor(1, 1, 1, 1)

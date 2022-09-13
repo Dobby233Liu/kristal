@@ -23,6 +23,7 @@ function Game:clear()
     self.inventory = nil
     self.quick_save = nil
     self.lock_movement = false
+    self.key_repeat = false
     self.started = false
     self.border = "simple"
 end
@@ -93,6 +94,9 @@ function Game:getConfig(key, merge, deep_merge)
     local default_config = Kristal.ChapterConfigs[Utils.clamp(self.chapter, 1, #Kristal.ChapterConfigs)]
 
     if not Mod then return default_config[key] end
+
+    local mod_result = Kristal.callEvent("getConfig", key)
+    if mod_result ~= nil then return mod_result end
 
     local mod_config = Mod.info and Mod.info.config and Utils.getAnyCase(Mod.info.config, "Kristal") or {}
 
@@ -263,7 +267,7 @@ function Game:load(data, index, fade)
 
     self.level_up_count = data.level_up_count or 0
 
-    self.money = data.money or 0
+    self.money = data.money or Kristal.getModOption("money") or 0
     self.xp = data.xp or 0
 
     self.tension = data.tension or 0
@@ -432,7 +436,7 @@ function Game:loadQuick(fade)
     self.quick_save = save
 end
 
-function Game:encounter(encounter, transition, enemy)
+function Game:encounter(encounter, transition, enemy, context)
     if transition == nil then transition = true end
 
     if self.battle then
@@ -448,11 +452,17 @@ function Game:encounter(encounter, transition, enemy)
     self.state = "BATTLE"
 
     self.battle = Battle()
+
+    if context then
+        self.battle.encounter_context = context
+    end
+
     if type(transition) == "string" then
         self.battle:postInit(transition, encounter)
     else
         self.battle:postInit(transition and "TRANSITION" or "INTRO", encounter)
     end
+
     self.stage:addChild(self.battle)
 end
 
@@ -603,7 +613,8 @@ function Game:getSoulColor()
     local chara = Game:getSoulPartyMember()
 
     if chara and chara:getSoulPriority() >= 0 then
-        return chara:getSoulColor()
+        local r, g, b, a = chara:getSoulColor()
+        return r, g, b, a or 1
     end
 
     return 1, 0, 0, 1
@@ -728,35 +739,38 @@ function Game:update()
     Kristal.callEvent("postUpdate", DT)
 end
 
-function Game:keypressed(key)
-    if OVERLAY_OPEN then return end
-
-    -- To work with input clearing, let's shove key processing through Input.
-    if not Input.processKeyPressedFunc(key) then
+function Game:onKeyPressed(key, is_repeat)
+    if Kristal.callEvent("onKeyPressed", key, is_repeat) then
+        -- Mod:onKeyPressed returned true, cancel default behaviour
         return
     end
 
-    if Kristal.callEvent("onKeyPressed", key) then
+    if is_repeat and not self.key_repeat then
+        -- Ignore key repeat unless enabled by a game state
         return
     end
 
     if self.state == "BATTLE" then
         if self.battle then
-            self.battle:keypressed(key)
+            self.battle:onKeyPressed(key)
         end
     elseif self.state == "OVERWORLD" then
         if self.world then
-            self.world:keypressed(key)
+            self.world:onKeyPressed(key)
         end
     elseif self.state == "SHOP" then
         if self.shop then
-            self.shop:keypressed(key)
+            self.shop:onKeyPressed(key, is_repeat)
         end
     elseif self.state == "GAMEOVER" then
         if self.gameover then
-            self.gameover:keypressed(key)
+            self.gameover:onKeyPressed(key)
         end
     end
+end
+
+function Game:onKeyReleased(key)
+    Kristal.callEvent("onKeyReleased", key)
 end
 
 function Game:draw()

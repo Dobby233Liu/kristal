@@ -19,6 +19,12 @@ function TextInput.attachInput(tbl, options)
     self.updateInput(tbl)
 
     self.reset(options)
+
+    self.submit_callback = nil
+    self.up_limit_callback = nil
+    self.down_limit_callback = nil
+    self.pressed_callback = nil
+    self.text_callback = nil
 end
 
 function TextInput.updateInput(tbl)
@@ -26,7 +32,7 @@ function TextInput.updateInput(tbl)
 end
 
 function TextInput.endInput()
-    if not Kristal.DebugSystem or not Kristal.DebugSystem:mouseOpen() then
+    if not Kristal.DebugSystem or not Kristal.DebugSystem:selectionOpen() then
         Kristal.hideCursor()
     end
     self.active = false

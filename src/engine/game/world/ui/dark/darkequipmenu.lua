@@ -225,7 +225,6 @@ function DarkEquipMenu:update()
             self.ui_select:stop()
             self.ui_select:play()
 
-            love.keyboard.setKeyRepeat(true)
             self:updateDescription()
         end
         local old_selected = self.selected_slot
@@ -248,17 +247,16 @@ function DarkEquipMenu:update()
             self.ui_cancel_small:stop()
             self.ui_cancel_small:play()
 
-            love.keyboard.setKeyRepeat(false)
             self:updateDescription()
             return
         end
         local type = self:getCurrentItemType()
         local max_items = self:getMaxItems()
         local old_selected = self.selected_item[type]
-        if Input.pressed("up") then
+        if Input.pressed("up", true) then
             self.selected_item[type] = self.selected_item[type] - 1
         end
-        if Input.pressed("down") then
+        if Input.pressed("down", true) then
             self.selected_item[type] = self.selected_item[type] + 1
         end
         self.selected_item[type] = Utils.clamp(self.selected_item[type], 1, max_items)
@@ -307,7 +305,6 @@ function DarkEquipMenu:update()
                 Game.inventory:setItem(self:getCurrentStorage(), self.selected_item[type], swap_with)
 
                 self.state = "SLOTS"
-                love.keyboard.setKeyRepeat(false)
                 self:updateDescription()
             end
         end
@@ -318,13 +315,14 @@ end
 function DarkEquipMenu:draw()
     love.graphics.setFont(self.font)
 
-    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setColor(PALETTE["world_border"])
     love.graphics.rectangle("fill", 188, -24,  6,  139)
     love.graphics.rectangle("fill", -24, 109, 58,  6)
     love.graphics.rectangle("fill", 130, 109, 160, 6)
     love.graphics.rectangle("fill", 422, 109, 81,  6)
     love.graphics.rectangle("fill", 241, 109, 6,   192)
 
+    love.graphics.setColor(1, 1, 1, 1)
     love.graphics.draw(self.caption_sprites[    "char"],  36, -26, 0, 2, 2)
     love.graphics.draw(self.caption_sprites["equipped"], 294, -26, 0, 2, 2)
     love.graphics.draw(self.caption_sprites[   "stats"],  34, 104, 0, 2, 2)
@@ -386,7 +384,7 @@ function DarkEquipMenu:drawEquippedItem(index, x, y)
         end
         love.graphics.print(item:getName(), x + 22, y - 6)
     else
-        love.graphics.setColor(0.25, 0.25, 0.25)
+        love.graphics.setColor(PALETTE["world_dark_gray"])
         love.graphics.print("(Nothing)", x + 22, y - 6)
     end
 end

@@ -4,12 +4,13 @@
     "subtitle": "A testing mod full of various stuff and things",
 
     "version": "v?.?.?",
-    "engineVer": "v0.7.0-dev",
+    "engineVer": "v0.8.0-dev",
 
     "chapter": 2,
 
     "map": "alley",
     "party": ["kris", "susie", "ralsei"],
+    //"party": ["kris", "noelle"], // for testing snowgrave
     "inventory": {
         "items": ["darkburger", "darkburger", "darkburger", "darkburger", "dd_burger", "dumburger", "tensionbit", "tensionbit", "counter"],
         "key_items": ["cell_phone", "shadowcrystal", "egg"],

@@ -20,7 +20,7 @@ function DebugSystem:init()
     self.heart_target_x = -10
     self.heart_target_y = -10
 
-    -- States: IDLE, MENU, MOUSE
+    -- States: IDLE, MENU, SELECTION, FACES
     self.state = "IDLE"
     self.old_state = "IDLE"
     self.state_reason = nil
@@ -68,6 +68,14 @@ function DebugSystem:init()
 
     self.menu_y = 0
     self.menu_target_y = 0
+
+    self.faces_y = 0
+
+    self.mouse_clicked = false
+
+    self.playing_sound = nil
+    self.old_music_volume = 1
+    self.music_needs_reset = false
 end
 
 function DebugSystem:getStage()
@@ -76,8 +84,8 @@ function DebugSystem:getStage()
     end
 end
 
-function DebugSystem:mouseOpen()
-    return self.state == "MOUSE"
+function DebugSystem:selectionOpen()
+    return self.state == "SELECTION"
 end
 
 function DebugSystem:selectObject(object)
@@ -100,17 +108,17 @@ function DebugSystem:onMousePressed(x, y, button, istouch, presses)
     end
 
     if button == 3 then
-        if self:mouseOpen() then
-            self:closeMouse()
+        if self:selectionOpen() then
+            self:closeSelection()
         else
-            self:openMouse()
+            self:openSelection()
         end
         return
     end
 
-    if self:mouseOpen() then
+    if self:selectionOpen() then
         if button == 1 or button == 2 then
-            local object = self:detectObject(Input.getMousePosition())
+            local object = self:detectObject(Input.getCurrentCursorPosition())
 
             if object then
                 self:selectObject(object)
@@ -130,14 +138,14 @@ function DebugSystem:onMousePressed(x, y, button, istouch, presses)
                     if Game.world then
                         if Game.world.player then
                             self.context:addMenuItem("Teleport", "Teleport the player to\nthe current position.", function()
-                                Game.world.player:setScreenPos(Input.getMousePosition())
+                                Game.world.player:setScreenPos(Input.getCurrentCursorPosition())
                                 Game.world.player:interpolateFollowers()
                                 self:selectObject(Game.world.player)
                             end)
                         else
                             self.context:addMenuItem("Spawn player", "Spawn the player at the\ncurrent position.", function()
                                 Game.world:spawnPlayer(0, 0, Game.party[1]:getActor())
-                                Game.world.player:setScreenPos(Input.getMousePosition())
+                                Game.world.player:setScreenPos(Input.getCurrentCursorPosition())
                                 Game.world.player:interpolateFollowers()
                                 self:selectObject(Game.world.player)
                             end)
@@ -164,16 +172,18 @@ function DebugSystem:onMousePressed(x, y, button, istouch, presses)
                                 Object.endCache()
                             end
                         end)
-                        self.window:setPosition(Input.getMousePosition())
+                        self.window:setPosition(Input.getCurrentCursorPosition())
                         self:addChild(self.window)
                     end)
                     Kristal.callEvent("registerDebugContext", self.context, nil)
-                    self.context:setPosition(Input.getMousePosition())
+                    self.context:setPosition(Input.getCurrentCursorPosition())
                     self:addChild(self.context)
                 end
             end
         end
     end
+
+    self.mouse_clicked = true
 end
 
 function DebugSystem:openObjectContext(object)
@@ -181,7 +191,7 @@ function DebugSystem:openObjectContext(object)
     self.last_context = self.context
 
     Kristal.callEvent("registerDebugContext", self.context, self.object)
-    self.context:setPosition(Input.getMousePosition())
+    self.context:setPosition(Input.getCurrentCursorPosition())
     self:addChild(self.context)
 end
 
@@ -219,7 +229,7 @@ function DebugSystem:pasteObject(object)
         end
     end
 
-    new_object:setScreenPos(Input.getMousePosition())
+    new_object:setScreenPos(Input.getCurrentCursorPosition())
     self:selectObject(new_object)
     if self.copied_object_temp then
         self.copied_object = nil
@@ -309,9 +319,27 @@ function DebugSystem:refresh()
     Kristal.callEvent("registerDebugOptions", self)
 end
 
+function DebugSystem:fadeMusicOut()
+    local music = Game:getActiveMusic()
+    if music then
+        self.old_music_volume = music.volume
+        self.music_needs_reset = true
+        music:fade(0.15, 0.5)
+    end
+end
+
+function DebugSystem:fadeMusicIn()
+    local music = Game:getActiveMusic()
+    if music and self.music_needs_reset then
+        music:fade(self.old_music_volume, 0.5)
+    end
+    self.music_needs_reset = false
+end
+
 function DebugSystem:returnMenu()
     Input.clear("confirm")
     Input.clear("cancel")
+    self:fadeMusicIn()
     if #self.menu_history == 0 then
         self:closeMenu()
     else
@@ -360,13 +388,24 @@ function DebugSystem:startTextInput()
         if (self.current_selecting ~= 0) then
             TextInput.endInput()
         end
-        love.keyboard.setKeyRepeat(true)
+        --love.keyboard.setKeyRepeat(true)
     end
 
+    Input.clear("down")
+    Input.clear("gamepad:lsdown")
+    Input.clear("gamepad:dpdown")
+
     TextInput.pressed_callback = function(key)
-        if key == "down" then
+        if not Input.shouldProcess(key) then return end
+
+        if key == "down" or key == "gamepad:lsdown" or key == "gamepad:dpdown" then
             TextInput.endInput()
-            love.keyboard.setKeyRepeat(true)
+
+            if self.current_selecting < #self:getValidOptions() then
+                Assets.playSound("ui_move")
+                self.current_selecting = self.current_selecting + 1
+            end
+            --love.keyboard.setKeyRepeat(true)
         end
     end
 end
@@ -439,7 +478,7 @@ function DebugSystem:registerSubMenus()
     for id, item_data in pairs(Registry.items) do
         local item = item_data()
         self:registerOption("give_item", item.name, item.description, function()
-            Game.inventory:tryGiveItem(item)
+            Game.inventory:tryGiveItem(item_data())
         end)
     end
 
@@ -483,6 +522,36 @@ function DebugSystem:registerSubMenus()
             end)
         end
     end
+
+    self:registerMenu("wave_select", "Wave Select", "search")
+    -- loop through registry and add menu options for all waves
+    local waves_list = {}
+    for id,_ in pairs(Registry.waves) do
+        table.insert(waves_list, id)
+    end
+
+    table.sort(waves_list, function(a, b)
+        return a < b
+    end)
+
+    for _,id in ipairs(waves_list) do
+        self:registerOption("wave_select", id, "Start this wave.", function()
+            Game.battle:setState("DEFENDINGBEGIN", {id})
+            self:closeMenu()
+        end)
+    end
+
+    self:registerMenu("sound_test", "Sound Test", "search")
+
+    for id, _ in pairs(Assets.sounds) do
+        self:registerOption("sound_test", id, "Play this sound.", function()
+            if self.playing_sound then
+                self.playing_sound:stop()
+            end
+            self.playing_sound = Assets.playSound(id)
+        end)
+    end
+
 end
 
 function DebugSystem:registerDefaults()
@@ -516,6 +585,16 @@ function DebugSystem:registerDefaults()
         self:enterMenu("give_item", 0)
     end)
 
+    self:registerOption("main", "Portrait Viewer", "Enter the portrait viewer menu.", function()
+        self:setState("FACES")
+    end)
+
+    self:registerOption("main", "Sound Test", "Enter the sound test menu.", function()
+        self:fadeMusicOut()
+        self:enterMenu("sound_test", 0)
+    end)
+
+
     -- World specific
     self:registerOption("main", "Select Map", "Switch to a new map.", function()
         self:enterMenu("select_map", 0)
@@ -530,7 +609,13 @@ function DebugSystem:registerDefaults()
     end, "OVERWORLD")
 
     -- Battle specific
-    self:registerOption("main", "End Battle", "Instantly complete a battle.", function() Game.battle:setState("VICTORY") end, "BATTLE")
+    self:registerOption("main", "Start Wave", "Start a wave.", function()
+        self:enterMenu("wave_select", 0)
+    end, "BATTLE")
+
+    self:registerOption("main", "End Battle", "Instantly complete a battle.", function()
+        Game.battle:setState("VICTORY")
+    end, "BATTLE")
 end
 
 function DebugSystem:getValidOptions()
@@ -553,12 +638,12 @@ function DebugSystem:registerOption(menu, name, description, func, state)
     table.insert(self.menus[menu].options, {name=name, description=description, func=func, state=state or "ALL"})
 end
 
-function DebugSystem:openMouse()
+function DebugSystem:openSelection()
     Assets.playSound("ui_select")
-    self:setState("MOUSE")
+    self:setState("SELECTION")
 end
 
-function DebugSystem:closeMouse()
+function DebugSystem:closeSelection()
     Assets.playSound("ui_move")
     self:setState("IDLE")
 end
@@ -580,6 +665,7 @@ function DebugSystem:setState(state, reason)
 end
 
 function DebugSystem:onStateChange(old, new)
+    Input.gamepad_locked = false
     self.heart_target_x = -10
     if new == "MENU" then
         self.heart_target_x = 19
@@ -590,11 +676,12 @@ function DebugSystem:onStateChange(old, new)
         OVERLAY_OPEN = true
 
         Kristal.showCursor()
-        love.keyboard.setKeyRepeat(true) -- TODO: Text repeat stack
-    elseif new == "MOUSE" then
+        --love.keyboard.setKeyRepeat(true) -- TODO: Text repeat stack
+    elseif new == "SELECTION" then
         self.last_object = nil
         self.menu_anim_timer = 0
         self.circle_anim_timer = 0
+        Input.gamepad_locked = true
         Kristal.showCursor()
     elseif new == "IDLE" then
         self:unselectObject()
@@ -602,8 +689,18 @@ function DebugSystem:onStateChange(old, new)
         OVERLAY_OPEN = false
 
         Kristal.hideCursor()
-        love.keyboard.setKeyRepeat(false)
+        --love.keyboard.setKeyRepeat(false)
+    elseif new == "FACES" then
+        Input.gamepad_locked = true
+        Kristal.showCursor()
     end
+
+    self:fadeMusicIn()
+
+    if old == "IDLE" and new == "MENU" and self.current_menu == "sound_test" then
+        self:fadeMusicOut()
+    end
+
 end
 
 function DebugSystem:updateBounds(options)
@@ -637,12 +734,26 @@ function DebugSystem:updateBounds(options)
     end
 end
 
-function DebugSystem:keypressed(key, _, is_repeat)
-    if Input.is("object_selector", key) then
-        if self:mouseOpen() then
-            self:closeMouse()
+function DebugSystem:onKeyReleased(key)
+    if self.state == "SELECTION" then
+        -- Gamepad
+        if (key == "gamepad:a") and Input.usingGamepad() then
+            self:unselectObject()
+        end
+    end
+end
+
+function DebugSystem:onKeyPressed(key, is_repeat)
+    local was_locked = Input.gamepad_locked
+    Input.gamepad_locked = false
+    if not Input.shouldProcess(key, is_repeat) then return end
+    Input.gamepad_locked = was_locked
+
+    if Input.is("object_selector", key) and not is_repeat then
+        if self:selectionOpen() then
+            self:closeSelection()
         else
-            self:openMouse()
+            self:openSelection()
         end
         return
     end
@@ -652,15 +763,17 @@ function DebugSystem:keypressed(key, _, is_repeat)
     if self.state == "MENU" then
 
         local options = self:getValidOptions()
-        if Input.isCancel(key) then
+        if Input.isCancel(key) and not is_repeat then
             Assets.playSound("ui_move")
             self:returnMenu()
             return
         end
-        if Input.isConfirm(key) then
+        if Input.isConfirm(key) and not is_repeat then
             local option = options[self.current_selecting]
             if option then
-                Assets.playSound("ui_select")
+                if self.current_menu ~= "sound_test" then
+                    Assets.playSound("ui_select")
+                end
                 option.func()
             end
         end
@@ -679,7 +792,24 @@ function DebugSystem:keypressed(key, _, is_repeat)
         if is_search and (self.current_selecting == 0) and not TextInput.active then
             self:startTextInput()
         end
-    elseif self.state == "MOUSE" then
+    elseif self.state == "SELECTION" and not is_repeat then
+        -- Gamepad
+        if (key == "gamepad:a") and Input.usingGamepad() then
+            local object = self:detectObject(Input.getCurrentCursorPosition())
+
+            if object then
+                self:selectObject(object)
+                self.grabbing = true
+                local screen_x, screen_y = object:getScreenPos()
+                local x, y = Input.getCurrentCursorPosition()
+                self.grab_offset_x = x - screen_x
+                self.grab_offset_y = y - screen_y
+            else
+                self:unselectObject()
+            end
+        end
+
+        -- Other
         if (key == "c") and Input.ctrl() and self.object then
             self:copyObject(self.object)
         elseif (key == "x") and Input.ctrl() and self.object then
@@ -689,6 +819,12 @@ function DebugSystem:keypressed(key, _, is_repeat)
         elseif (key == "delete") and self.object then
             self.object:remove()
             self:unselectObject()
+        end
+    elseif self.state == "FACES" then
+        if (Input.isCancel(key) or Input.isConfirm(key)) and not is_repeat then
+            Assets.playSound("ui_select")
+            self:setState("MENU")
+            return
         end
     end
 end
@@ -729,7 +865,7 @@ function DebugSystem:update()
     -- Update grabbed object
     if self.grabbing then
         if self.object then
-            local x, y = Input.getMousePosition()
+            local x, y = Input.getCurrentCursorPosition()
             self.object:setScreenPos(x - self.grab_offset_x, y - self.grab_offset_y)
             self.object.debug_x, self.object.debug_y = self.object.x, self.object.y
         end
@@ -742,7 +878,7 @@ function DebugSystem:update()
     self.flash_fx.amount = -math.cos((love.timer.getTime() * 30) / 5) * 0.4 + 0.6
 
     if stage then
-        if self.state == "MOUSE" and Kristal.Config["objectSelectionSlowdown"] then
+        if self.state == "SELECTION" and Kristal.Config["objectSelectionSlowdown"] then
             stage.timescale = math.max(stage.timescale - (DT / 0.6), 0)
             if stage.timescale == 0 then
                 stage.active = false
@@ -754,6 +890,10 @@ function DebugSystem:update()
         end
     end
     super:update(self)
+end
+
+function DebugSystem:onWheelMoved(x, y)
+    self.faces_y = self.faces_y + (y * 32)
 end
 
 function DebugSystem:draw()
@@ -841,25 +981,105 @@ function DebugSystem:draw()
                 self:printShadow(line, 0, 480 + (32 * i) - (32 * (#wrapped + 1)), COLORS.gray, "center", 640)
             end
         end
+    elseif self.state == "FACES" then
+        header_name = "~ PORTRAIT VIEWER ~"
+        love.graphics.setColor(0, 0, 0, 0.5)
+        love.graphics.rectangle("fill", 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
 
-    elseif self.state == "MOUSE" or (self.old_state == "MOUSE" and self.state == "IDLE" and (menu_alpha > 0)) then
+        love.graphics.setColor(1, 1, 1, 1)
+
+        local textures = {}
+        for _, id in pairs(Assets.texture_ids) do
+            if Utils.startsWith(id, "face/") then
+                table.insert(textures, id:sub(6))
+            end
+        end
+
+        -- Sort textures alphabetically
+        table.sort(textures, function(a, b)
+            return a:lower() < b:lower()
+        end)
+
+        Draw.pushScissor()
+        Draw.scissorPoints(0, 92, 640, 480 - 32 - 16)
+
+        local name = "Press CONFIRM to go back."
+
+        local gap = 128
+        local x_offset = 64
+        local y_offset = 96
+        local faces_per_row = 4
+        local total_height = (math.ceil(#textures / faces_per_row) * gap)
+
+        self.faces_y = Utils.clamp(self.faces_y, -(total_height - 480 + 48 + 96), 0)
+
+        for i, texture_id in ipairs(textures) do
+            local x = (i - 1) % faces_per_row
+            local y = math.floor((i - 1) / faces_per_row)
+            local texture = Assets.getTexture("face/" .. texture_id)
+            love.graphics.draw(texture, x_offset + (x * gap), y_offset + (self.faces_y + (y * gap)), 0, 2, 2)
+
+            local width = texture:getWidth() * 2
+            local height = texture:getHeight() * 2
+
+            local mx, my = Input.getCurrentCursorPosition()
+
+            if mx > x_offset + (x * gap) and mx < x_offset + (x * gap) + width and
+               my > y_offset + (self.faces_y + (y * gap)) and my < y_offset + (self.faces_y + (y * gap)) + height then
+                love.graphics.setLineWidth(2)
+                love.graphics.setColor(0, 1, 1, 1)
+                love.graphics.rectangle("line", x_offset + (x * gap) - 1, y_offset + (self.faces_y + (y * gap)) - 1, width + 2, height + 2)
+                love.graphics.setColor(1, 1, 1, 1)
+
+                name = texture_id
+                if self.clicked_name == name then
+                    name = "Copied to clipboard!"
+                else
+                    self.clicked_name = nil
+                end
+
+                if self.mouse_clicked then
+                    self.clicked_name = texture_id
+                    local filename = texture_id
+                    -- Remove everything before the last slash
+                    filename = Utils.split(filename, "/")[#Utils.split(filename, "/")]
+                    love.system.setClipboardText(filename)
+                    Assets.playSound("ui_select")
+                end
+            end
+        end
+
+        -- Draw scrollbar
+        local scrollbar_height = 480 - y_offset - 48
+        local scrollbar_y = 96 + (scrollbar_height * (-self.faces_y / total_height))
+        love.graphics.setColor(1, 1, 1, 0.5)
+        love.graphics.rectangle("fill", 640 - 16, 96, 4, 480 - 96 - 48)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.rectangle("fill", 640 - 16, scrollbar_y, 4, scrollbar_height * (scrollbar_height / total_height))
+        love.graphics.setColor(1, 1, 1, 1)
+
+        Draw.popScissor()
+
+        self:printShadow(name, 0, 480 - 32, COLORS.gray, "center", 640)
+
+    elseif self.state == "SELECTION" or (self.old_state == "SELECTION" and self.state == "IDLE" and (menu_alpha > 0)) then
         header_name = "~ OBJECT SELECTION ~"
 
-        local mx, my = Input.getMousePosition()
+        local mx, my = Input.getCurrentCursorPosition()
 
         for i = 1, 2 do
             local prog = circle_progress - (i - 1) * 0.4
             if prog >= 0 then
                 love.graphics.setLineWidth(2)
                 local r = prog * 40
-                alpha = 2 - (prog*1.2)
+                local alpha = 2 - (prog*1.2)
                 love.graphics.setColor(0, 1, 1, alpha * circle_alpha)
                 love.graphics.circle("line", mx, my, r, 100)
             end
         end
 
         Object.startCache()
-        local mx, my = Input.getMousePosition()
+        local mx, my = Input.getCurrentCursorPosition()
 
         local object = self.object
         if (not self.grabbing) and (not self.context) then
@@ -985,6 +1205,8 @@ function DebugSystem:draw()
 
     love.graphics.setColor(1, 1, 1, menu_alpha)
     love.graphics.draw(self.menu_canvas, 0, 0)
+
+    self.mouse_clicked = false
 
     super:draw(self)
 end

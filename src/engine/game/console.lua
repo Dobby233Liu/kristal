@@ -44,7 +44,7 @@ function Console:createEnv()
                 str = Utils.dump(str)
             end
             print_string = print_string .. tostring(str)
-            if i ~= arg.n then
+            if i ~= #arg then
                 print_string = print_string  .. "    "
             end
         end
@@ -219,7 +219,7 @@ function Console:draw()
 
     love.graphics.setColor(1, 1, 1, 1)
 
-    y_offset = self.height
+    local y_offset = self.height
 
     for line = #self.history - self.height, #self.history do
         local lines = Utils.split(self.history[line] or "", "\n", false)
@@ -227,7 +227,7 @@ function Console:draw()
     end
 
     for line = #self.history - self.height, #self.history do
-        text = self.history[line] or ""
+        local text = self.history[line] or ""
         local lines = Utils.split(text, "\n", false)
         for i = 1, #lines do
             self:print(lines[i] or "", 8, y_offset * 16)
@@ -347,6 +347,8 @@ function Console:unsafeRun(str)
 end
 
 function Console:onConsoleKeyPressed(key)
+    if not Input.shouldProcess(key) then return end
+
     if Input.is("console", key) and not Input.shift() then
         Input.clear("console")
         if self.is_open then

@@ -57,6 +57,10 @@ function Object:init(x, y, width, height)
     self.init_x = self.x
     self.init_y = self.y
 
+    -- Save the previous position
+    self.last_x = self.x
+    self.last_x = self.y
+
     -- Initialize this object's size
     self.width = width or 0
     self.height = height or 0
@@ -811,10 +815,15 @@ function Object:getHierarchy()
     return tbl
 end
 
-function Object:getHierchy() return self:getHierarchy() end
-function Object:getHierarcy() return self:getHierarchy() end
-function Object:getHireachy() return self:getHierarchy() end
-
+function Object:getFullScale()
+    local sx, sy = self.scale_x, self.scale_y
+    if self.parent then
+        local psx, psy = self.parent:getFullScale()
+        sx = sx * psx
+        sy = sy * psy
+    end
+    return sx, sy
+end
 
 function Object:remove()
     if self.parent then
@@ -941,6 +950,8 @@ function Object:fullUpdate()
         used_timescale = true
         RUNTIME = RUNTIME + self._runtime_update_offset
     end
+    self.last_x = self.x
+    self.last_y = self.y
     self:update()
     if used_timescale then
         DT = last_dt
@@ -1001,6 +1012,25 @@ function Object:drawChildren(min_layer, max_layer)
     love.graphics.setColor(oldr, oldg, oldb, olda)
 end
 
+function Object:drawSelf(no_children, dont_transform)
+    local last_draw_children = self._dont_draw_children
+    if no_children then
+        self._dont_draw_children = true
+    end
+    love.graphics.push()
+    self:preDraw(dont_transform)
+    if self.draw_children_below then
+        self:drawChildren(nil, self.draw_children_below)
+    end
+    self:draw()
+    if self.draw_children_above then
+        self:drawChildren(self.draw_children_above)
+    end
+    self:postDraw()
+    love.graphics.pop()
+    self._dont_draw_children = last_draw_children
+end
+
 function Object:fullDraw(no_children, dont_transform)
     local used_timescale, last_dt, last_dt_mult, last_runtime = false, DT, DTMULT, RUNTIME
     if self.timescale ~= 1 then
@@ -1023,22 +1053,7 @@ function Object:fullDraw(no_children, dont_transform)
             love.graphics.translate(fx_off_x, fx_off_y)
         end
     end
-    local last_draw_children = self._dont_draw_children
-    if no_children then
-        self._dont_draw_children = true
-    end
-    love.graphics.push()
-    self:preDraw(fx_transform or dont_transform)
-    if self.draw_children_below then
-        self:drawChildren(nil, self.draw_children_below)
-    end
-    self:draw()
-    if self.draw_children_above then
-        self:drawChildren(self.draw_children_above)
-    end
-    self:postDraw()
-    love.graphics.pop()
-    self._dont_draw_children = last_draw_children
+    self:drawSelf(no_children, fx_transform or dont_transform)
     if processing_fx then
         Draw.popCanvas(true)
         local final_canvas = canvas

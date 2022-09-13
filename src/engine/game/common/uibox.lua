@@ -7,7 +7,8 @@ function UIBox:init(x, y, width, height, skin)
     self.top_frame    = 0
     self.corner_frame = 0
 
-    self.skin = skin or (Game:isLight() and "light" or "dark")
+    self.skin = skin or Kristal.callEvent("getUISkin") or (Game:isLight() and "light" or "dark")
+    self.fill_color = {0,0,0}
 
     self.left   = Assets.getFramesOrTexture("ui/box/" .. self.skin .. "/left")
     self.top    = Assets.getFramesOrTexture("ui/box/" .. self.skin .. "/top")
@@ -40,10 +41,12 @@ function UIBox:draw()
     local top_width   = self.top[1]:getWidth()
     local top_height  = self.top[1]:getHeight()
 
-    love.graphics.setColor(0, 0, 0, self.alpha)
+    local  r, g, b,a = self:getDrawColor()
+    local fr,fg,fb   = unpack(self.fill_color)
+    love.graphics.setColor(fr,fg,fb,a)
     love.graphics.rectangle("fill", 0, 0, self.width, self.height)
 
-    love.graphics.setColor(self:getDrawColor())
+    love.graphics.setColor(r, g, b, a)
 
     love.graphics.draw(self.left[math.floor(self.left_frame)], 0, 0, 0, 2, self.height / left_height, left_width, 0)
     love.graphics.draw(self.left[math.floor(self.left_frame)], self.width, 0, math.pi, 2, self.height / left_height, left_width, left_height)

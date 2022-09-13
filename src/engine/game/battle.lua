@@ -21,6 +21,8 @@ function Battle:init()
     self.enemy_world_characters = {}
     self.battler_targets = {}
 
+    self.encounter_context = nil
+
     for i = 1, math.min(3, #Game.party) do
         local party_member = Game.party[i]
 
@@ -205,21 +207,7 @@ function Battle:postInit(state, encounter)
 
     self.battler_targets = {}
     for index, battler in ipairs(self.party) do
-        local target_x, target_y
-        if #self.party == 1 then
-            target_x = 80
-            target_y = 140
-        elseif #self.party == 2 then
-            target_x = 80
-            target_y = 100 + (80 * (index - 1))
-        elseif #self.party == 3 then
-            target_x = 80
-            target_y = 50 + (80 * (index - 1))
-        end
-
-        local ox, oy = battler.chara:getBattleOffset()
-        target_x = target_x + (battler.actor:getWidth()/2 + ox) * 2
-        target_y = target_y + (battler.actor:getHeight()  + oy) * 2
+        local target_x, target_y = self.encounter:getPartyPosition(index)
         table.insert(self.battler_targets, {target_x, target_y})
 
         if state ~= "TRANSITION" then
@@ -255,6 +243,12 @@ function Battle:postInit(state, encounter)
                     end
                 end
             end
+        end
+    end
+
+    if self.encounter_context and self.encounter_context:includes(ChaserEnemy) then
+        for _,enemy in ipairs(self.encounter_context:getGroupedEnemies(true)) do
+            enemy:onEncounterStart(enemy == self.encounter_context, self.encounter)
         end
     end
 
@@ -551,27 +545,29 @@ function Battle:onStateChange(old,new)
 
         self.battle_ui:transitionOut()
         self.music:fade(0, 20/30)
-        for _,enemy in ipairs(self.defeated_enemies) do
-            local world_chara = self.enemy_world_characters[enemy]
-            if enemy.done_state == "FROZEN" and world_chara then
-                local statue = FrozenEnemy(enemy.actor, world_chara.x, world_chara.y, {facing = world_chara.sprite.facing})
-                statue.layer = world_chara.layer
-                Game.world:addChild(statue)
-            end
-        end
-        for enemy,chara in pairs(self.enemy_world_characters) do
-            if enemy.exit_on_defeat then
-                chara.visible = true
-            end
-        end
         for _,battler in ipairs(self.party) do
             local index = self:getPartyIndex(battler.chara.id)
             if index then
                 self.battler_targets[index] = {battler:getPosition()}
             end
         end
+        if self.encounter_context and self.encounter_context:includes(ChaserEnemy) then
+            for _,enemy in ipairs(self.encounter_context:getGroupedEnemies(true)) do
+                enemy:onEncounterTransitionOut(enemy == self.encounter_context, self.encounter)
+            end
+        end
     elseif new == "DEFENDINGBEGIN" then
+        self.current_selecting = 0
+        self.battle_ui:clearEncounterText()
+
         self:setWaves(self.encounter:getNextWaves())
+        if self.state_reason then
+            self:setWaves(self.state_reason)
+        end
+
+        if self.arena then
+            self.arena:remove()
+        end
 
         local soul_x, soul_y, soul_offset_x, soul_offset_y
         local arena_x, arena_y, arena_w, arena_h, arena_shape
@@ -632,8 +628,7 @@ function Battle:onStateChange(old,new)
 
     local ending_wave = self.state_reason == "WAVEENDED"
 
-    if old == "DEFENDING" then
-        self:returnSoul()
+    if old == "DEFENDING" and new ~= "DEFENDINGBEGIN" then
         for _,wave in ipairs(self.waves) do
             if not wave:onEnd(false) then
                 wave:clear()
@@ -1297,10 +1292,18 @@ function Battle:pushAction(action_type, target, data, character_id, extra)
 
     local battler = self.party[character_id]
 
+    local current_state = self:getState()
+
     self:commitAction(battler, action_type, target, data, extra)
 
     if self.current_selecting == character_id then
-        self:nextParty()
+        if current_state == self:getState() then
+            self:nextParty()
+        elseif self.cutscene then
+            self.cutscene:after(function()
+                self:nextParty()
+            end)
+        end
     end
 end
 
@@ -1407,27 +1410,9 @@ end
 function Battle:commitSingleAction(action)
     local battler = self.party[action.character_id]
 
-    local anim = action.action:lower()
-    if action.action == "SKIP" and action.reason then
-        anim = action.reason:lower()
-    end
-
-    if (action.action == "ITEM" and action.data and (not action.data.instant)) or (action.action ~= "ITEM") then
-        battler:setAnimation("battle/"..anim.."_ready")
-        action.icon = anim
-    end
-
-    if action.tp then
-        if action.tp > 0 then
-            Game:giveTension(action.tp)
-        elseif action.tp < 0 then
-            Game:removeTension(-action.tp)
-        end
-    end
-
     if action.action == "ITEM" and action.data then
         local result = action.data:onBattleSelect(battler, action.target)
-        if result or result == nil then
+        if result ~= false then
             local storage, index = Game.inventory:getItemIndex(action.data)
             action.item_storage = storage
             action.item_index = index
@@ -1441,6 +1426,39 @@ function Battle:commitSingleAction(action)
             action.consumed = true
         else
             action.consumed = false
+        end
+    end
+    
+    local anim = action.action:lower()
+    if action.action == "SPELL" and action.data then
+        local result = action.data:onSelect(battler, action.target)
+        if result ~= false then
+            if action.tp then
+                if action.tp > 0 then
+                    Game:giveTension(action.tp)
+                elseif action.tp < 0 then
+                    Game:removeTension(-action.tp)
+                end
+            end
+            battler:setAnimation("battle/"..anim.."_ready")
+            action.icon = anim
+        end
+    else
+        if action.tp then
+            if action.tp > 0 then
+                Game:giveTension(action.tp)
+            elseif action.tp < 0 then
+                Game:removeTension(-action.tp)
+            end
+        end
+        
+        if action.action == "SKIP" and action.reason then
+            anim = action.reason:lower()
+        end
+    
+        if (action.action == "ITEM" and action.data and (not action.data.instant)) or (action.action ~= "ITEM") then
+            battler:setAnimation("battle/"..anim.."_ready")
+            action.icon = anim
         end
     end
 
@@ -1470,6 +1488,8 @@ function Battle:removeSingleAction(action)
             end
         end
         action.data:onBattleDeselect(battler, action.target)
+    elseif action.action == "SPELL" and action.data then
+        action.data:onDeselect(battler, action.target)
     end
 
     battler.action = nil
@@ -1498,6 +1518,19 @@ end
 function Battle:getEnemyBattler(string_id)
     for _, enemy in ipairs(self.enemies) do
         if enemy.id == string_id then
+            return enemy
+        end
+    end
+end
+
+function Battle:getEnemyFromCharacter(chara)
+    for _, enemy in ipairs(self.enemies) do
+        if self.enemy_world_characters[enemy] == chara then
+            return enemy
+        end
+    end
+    for _, enemy in ipairs(self.defeated_enemies) do
+        if self.enemy_world_characters[enemy] == chara then
             return enemy
         end
     end
@@ -1896,6 +1929,10 @@ end
 
 function Battle:returnToWorld()
     Game:setTension(0)
+    self.encounter:setFlag("done", true)
+    if self.used_violence then
+        self.encounter:setFlag("violenced", true)
+    end
     self.transition_timer = 0
     for _,battler in ipairs(self.party) do
         if self.party_world_characters[battler.chara.id] then
@@ -1914,6 +1951,11 @@ function Battle:returnToWorld()
             if world_chara.onReturnFromBattle then
                 world_chara:onReturnFromBattle(self.encounter, enemy)
             end
+        end
+    end
+    if self.encounter_context and self.encounter_context:includes(ChaserEnemy) then
+        for _,enemy in ipairs(self.encounter_context:getGroupedEnemies(true)) do
+            enemy:onEncounterEnd(enemy == self.encounter_context, self.encounter)
         end
     end
     self.music:stop()
@@ -1955,7 +1997,7 @@ function Battle:battleText(text,post_func)
     local target_state = self:getState()
 
     self.battle_ui.encounter_text:setText(text, function()
-        self.battle_ui.encounter_text:setText("")
+        self.battle_ui:clearEncounterText()
         if type(post_func) == "string" then
             target_state = post_func
         elseif type(post_func) == "function" and post_func() then
@@ -2507,9 +2549,7 @@ function Battle:getTargetForItem(item, default_ally, default_enemy)
     end
 end
 
-function Battle:keypressed(key)
-    if OVERLAY_OPEN then return end
-
+function Battle:onKeyPressed(key)
     if Kristal.Config["debug"] and Input.ctrl() then
         if key == "h" then
             for _,party in ipairs(self.party) do
@@ -2644,7 +2684,11 @@ function Battle:keypressed(key)
             if #self.enemies == 0 then return end
             self.selected_enemy = self.current_menu_y
             if self.state == "XACTENEMYSELECT" then
-                self:pushAction("XACT", self.enemies[self.selected_enemy], self.selected_xaction)
+                local xaction = Utils.copy(self.selected_xaction)
+                if xaction.default then
+                    xaction.name = self.enemies[self.selected_enemy]:getXAction(self.party[self.current_selecting])
+                end
+                self:pushAction("XACT", self.enemies[self.selected_enemy], xaction)
             elseif self.state_reason == "SPARE" then
                 self:pushAction("SPARE", self.enemies[self.selected_enemy])
             elseif self.state_reason == "ACT" then

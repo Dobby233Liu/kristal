@@ -127,6 +127,26 @@ function Encounter:getNextWaves()
     return waves
 end
 
+function Encounter:getPartyPosition(index)
+    local x, y = 0, 0
+    if #Game.battle.party == 1 then
+        x = 80
+        y = 140
+    elseif #Game.battle.party == 2 then
+        x = 80
+        y = 100 + (80 * (index - 1))
+    elseif #Game.battle.party == 3 then
+        x = 80
+        y = 50 + (80 * (index - 1))
+    end
+
+    local battler = Game.battle.party[index]
+    local ox, oy = battler.chara:getBattleOffset()
+    x = x + (battler.actor:getWidth()/2 + ox) * 2
+    y = y + (battler.actor:getHeight()  + oy) * 2
+    return x, y
+end
+
 function Encounter:onDialogueEnd()
     Game.battle:setState("DEFENDINGBEGIN")
 end
@@ -145,6 +165,18 @@ end
 
 function Encounter:getDefeatedEnemies()
     return self.defeated_enemies or Game.battle.defeated_enemies
+end
+
+function Encounter:setFlag(flag, value)
+    Game:setFlag("encounter#"..self.id..":"..flag, value)
+end
+
+function Encounter:getFlag(flag, default)
+    return Game:getFlag("encounter#"..self.id..":"..flag, default)
+end
+
+function Encounter:addFlag(flag, amount)
+    Game:addFlag("encounter#"..self.id..":"..flag, amount)
 end
 
 return Encounter

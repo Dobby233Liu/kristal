@@ -350,12 +350,33 @@ function BattleCutscene:choicer(choices, options)
     for _,choice in ipairs(choices) do
         Game.battle.battle_ui.choice_box:addChoice(choice)
     end
+    Game.battle.battle_ui.choice_box:setColors(options["color"], options["highlight"])
 
     if options["wait"] or options["wait"] == nil then
         return self:wait(waitForChoicer)
     else
         return waitForChoicer, Game.battle.battle_ui.choice_box
     end
+end
+
+function BattleCutscene:closeText()
+    local choice_box = Game.battle.battle_ui.choice_box
+    local text = Game.battle.battle_ui.encounter_text
+    if choice_box.active then
+        choice_box:clearChoices()
+        choice_box.active = false
+        choice_box.visible = false
+        text.active = true
+        text.visible = true
+    end
+    for _,battler in ipairs(Utils.mergeMultiple(Game.battle.party, Game.battle:getActiveEnemies())) do
+        if battler.bubble then
+            battler:onBubbleRemove(battler.bubble)
+            battler.bubble:remove()
+            battler.bubble = nil
+        end
+    end
+    Game.battle.battle_ui:clearEncounterText()
 end
 
 return BattleCutscene

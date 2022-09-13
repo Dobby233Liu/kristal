@@ -65,6 +65,9 @@ AlphaFX = require("src.engine.drawfx.alphafx")
 RecolorFX = require("src.engine.drawfx.recolorfx")
 MaskFX = require("src.engine.drawfx.maskfx")
 OutlineFX = require("src.engine.drawfx.outlinefx")
+BattleOutlineFX = require("src.engine.drawfx.battleoutlinefx")
+ShadowFX = require("src.engine.drawfx.shadowfx")
+FountainShadowFX = require("src.engine.drawfx.fountainshadowfx")
 
 Collider = require("src.engine.colliders.collider")
 ColliderGroup = require("src.engine.colliders.collidergroup")
@@ -151,8 +154,12 @@ TileButton = require("src.engine.game.world.events.tilebutton")
 MagicGlass = require("src.engine.game.world.events.magicglass")
 TileObject = require("src.engine.game.world.events.tileobject")
 FrozenEnemy = require("src.engine.game.world.frozenenemy")
+WarpDoor = require("src.engine.game.world.events.warpdoor")
+DarkFountain = require("src.engine.game.world.events.darkfountain")
+FountainFloor = require("src.engine.game.world.events.fountainfloor")
 
 ToggleController = require("src.engine.game.world.events.controllers.togglecontroller")
+FountainShadowController = require("src.engine.game.world.events.controllers.fountainshadowcontroller")
 
 Battle = require("src.engine.game.battle")
 Encounter = require("src.engine.game.battle.encounter")
@@ -219,8 +226,8 @@ function love.run()
     local error_result
 
     local function doUpdate(dt)
-        -- Clear input from last frame
-        Input.clear()
+        -- Update pressed keys, handle key repeat
+        Input.update()
 
         -- Process events.
         if love.event then
@@ -255,7 +262,7 @@ function love.run()
     end
 
     local function mainLoop()
-        if FRAMERATE > 0 then
+        if FRAMERATE > 0 and not FAST_FORWARD then
             local tick_rate = 1 / FRAMERATE
 
             local dt = love.timer.step()

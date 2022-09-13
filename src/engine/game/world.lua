@@ -60,9 +60,6 @@ function World:init(map)
 
     self.calls = {}
 
-    -- Reset keypresses in-case they didn't get wiped on crash
-    Input.clear(nil, true)
-
     if map then
         self:loadMap(map)
     end
@@ -233,9 +230,7 @@ end
 function World:onStateChange(old, new)
 end
 
-function World:keypressed(key)
-    if OVERLAY_OPEN then return end
-    if TextInput.active then return end
+function World:onKeyPressed(key)
     if Kristal.Config["debug"] and Input.ctrl() then
         if key == "m" then
             if self.music then
@@ -270,8 +265,8 @@ function World:keypressed(key)
             Input.clear("menu")
         end
     elseif self.state == "MENU" then
-        if self.menu and self.menu.keypressed then
-            self.menu:keypressed(key)
+        if self.menu and self.menu.onKeyPressed then
+            self.menu:onKeyPressed(key)
         end
     end
 end

@@ -202,9 +202,112 @@ function Draw.scissorPoints(x1, y1, x2, y2)
     end
 end
 
-function Draw.drawCutout(texture, x, y, cx, cy, cw, ch, ...)
-    local quad = love.graphics.newQuad(cx, cy, cw, ch, texture:getWidth(), texture:getHeight())
+function Draw.setColor(r, g, b, a)
+    if type(r) == "table" then
+        local alpha = r[4] or 1
+        if type(g) == "number" then
+            alpha = alpha * g
+        end
+        love.graphics.setColor(r[1] or 1, r[2] or 1, r[3] or 1, alpha)
+    else
+        love.graphics.setColor(r or 1, g or 1, b or 1, a or 1)
+    end
+end
+
+function Draw.draw(...)
+    love.graphics.draw(...)
+end
+
+function Draw.drawPart(texture, x, y, cx, cy, cw, ch, ...)
+    local quad = Assets.getQuad(cx, cy, cw, ch, texture:getWidth(), texture:getHeight())
     love.graphics.draw(texture, quad, x, y, ...)
+end
+
+function Draw.drawCanvas(canvas, ...)
+    local mode,alphamode = love.graphics.getBlendMode()
+    love.graphics.setBlendMode(mode, "premultiplied")
+    love.graphics.draw(canvas, ...)
+    love.graphics.setBlendMode(mode, alphamode)
+end
+
+function Draw.drawCanvasPart(canvas, x, y, cx, cy, cw, ch, ...)
+    local quad = Assets.getQuad(cx, cy, cw, ch, canvas:getWidth(), canvas:getHeight())
+    Draw.drawCanvas(canvas, quad, x, y, ...)
+end
+
+function Draw.drawWrapped(drawable, wrap_x, wrap_y, x, y, r, sx, sy, ox, oy, kx, ky)
+    local dw, dh = drawable:getDimensions()
+
+    if x then
+        x, y = x or 0, y or 0
+        r, sx, sy = r or 0, sx or 1, sy or 1
+        ox, oy = ox or 0, oy or 0
+        kx, ky = kx or 0, ky or 0
+
+        love.graphics.push()
+        if x ~= 0 or y ~= 0    then love.graphics.translate(x, y)     end
+        if r ~= 0              then love.graphics.rotate(r)           end
+        if sx ~= 1 or sy ~= 1  then love.graphics.scale(sx, sy)       end
+        if kx ~= 0 or ky ~= 0  then love.graphics.shear(kx, ky)       end
+        if ox ~= 0 or oy ~= 0  then love.graphics.translate(-ox, -oy) end
+    end
+
+    local screen_l, screen_u = love.graphics.inverseTransformPoint(0, 0)
+    local screen_r, screen_d = love.graphics.inverseTransformPoint(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    local x1, y1 = math.min(screen_l, screen_r), math.min(screen_u, screen_d)
+    local x2, y2 = math.max(screen_l, screen_r), math.max(screen_u, screen_d)
+
+    local x_offset = math.floor(x1 / dw) * dw
+    local y_offset = math.floor(y1 / dh) * dh
+
+    local wrap_width = math.ceil((x2 - x_offset) / dw)
+    local wrap_height = math.ceil((y2 - y_offset) / dh)
+
+    if wrap_x and wrap_y then
+        for i = 1, wrap_width do
+            for j = 1, wrap_height do
+                love.graphics.draw(drawable, x_offset + (i-1) * dw, y_offset + (j-1) * dh)
+            end
+        end
+    elseif wrap_x then
+        for i = 1, wrap_width do
+            love.graphics.draw(drawable, x_offset + (i-1) * dw, 0)
+        end
+    elseif wrap_y then
+        for j = 1, wrap_height do
+            love.graphics.draw(drawable, 0, y_offset + (j-1) * dh)
+        end
+    end
+
+    if x then
+        love.graphics.pop()
+    end
+end
+
+--- Modes: `none`
+--- - `none`: Creates a canvas based on object size and draws the object at 0,0 (not transformed)
+---   - extra arguments: `no_children`, `pad_x`, `pad_y`
+function Draw.captureObject(object, mode, ...)
+    -- TODO: Add more modes (centered canvas, absolute screen canvas, full width/height including children ?)
+
+    mode = mode or "none"
+
+    if mode == "none" then
+        local no_children, pad_x, pad_y = ...
+
+        no_children = no_children or false
+        pad_x = pad_x or 0
+        pad_y = pad_y or 0
+
+        local canvas = Draw.pushCanvas(object.width + (pad_x * 2), object.height + (pad_y * 2))
+        love.graphics.translate(pad_x, pad_y)
+        object:drawSelf(no_children, true)
+        Draw.popCanvas(true)
+        return canvas
+    else
+        error("No draw mode: "..tostring(mode))
+    end
 end
 
 return Draw

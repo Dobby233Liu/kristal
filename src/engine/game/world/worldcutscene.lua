@@ -431,7 +431,7 @@ function WorldCutscene:fadeIn(speed, options)
     end
 end
 
-local function waitForTextbox(self) return self.textbox:isDone() end
+local function waitForTextbox(self) return not self.textbox or self.textbox:isDone() end
 function WorldCutscene:text(text, portrait, actor, options)
     if type(actor) == "table" and not isClass(actor) then
         options = actor
@@ -560,7 +560,7 @@ function WorldCutscene:choicer(choices, options)
         width, height = 530, 104
     end
 
-    self.choicebox = Choicebox(56, 344, width, height)
+    self.choicebox = Choicebox(56, 344, width, height, false, options)
     self.choicebox.layer = WORLD_LAYERS["textbox"]
     Game.world:addChild(self.choicebox)
     self.choicebox:setParallax(0, 0)

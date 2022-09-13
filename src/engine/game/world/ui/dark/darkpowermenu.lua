@@ -96,7 +96,6 @@ function DarkPowerMenu:update()
                 self.selected_spell = 1
                 self.scroll_y = 1
 
-                love.keyboard.setKeyRepeat(true)
                 self:updateDescription()
             else
                 self.ui_select:stop()
@@ -111,17 +110,16 @@ function DarkPowerMenu:update()
             self.ui_cancel_small:play()
 
             self.party.focused = true
-            
-            love.keyboard.setKeyRepeat(false)
+
             self:updateDescription()
             return
         end
         local spells = self:getSpells()
         local old_selected = self.selected_spell
-        if Input.pressed("up") then
+        if Input.pressed("up", true) then
             self.selected_spell = self.selected_spell - 1
         end
-        if Input.pressed("down") then
+        if Input.pressed("down", true) then
             self.selected_spell = self.selected_spell + 1
         end
         self.selected_spell = Utils.clamp(self.selected_spell, 1, #spells)
@@ -141,10 +139,11 @@ end
 function DarkPowerMenu:draw()
     love.graphics.setFont(self.font)
 
-    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setColor(PALETTE["world_border"])
     love.graphics.rectangle("fill", -24, 104, 525, 6)
     love.graphics.rectangle("fill", 212, 104, 6, 200)
 
+    love.graphics.setColor(1, 1, 1, 1)
     love.graphics.draw(self.caption_sprites[  "char"],  42, -28, 0, 2, 2)
     love.graphics.draw(self.caption_sprites[ "stats"],  42,  98, 0, 2, 2)
     love.graphics.draw(self.caption_sprites["spells"], 298,  98, 0, 2, 2)
@@ -158,7 +157,7 @@ end
 
 function DarkPowerMenu:drawChar()
     local party = self.party:getSelected()
-    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setColor(PALETTE["world_text"])
     love.graphics.print(party.name, 48, -7)
     love.graphics.print(party:getTitle(), 238, -7)
 end
@@ -179,10 +178,10 @@ function DarkPowerMenu:drawStats()
     for i = 1, 3 do
         local x, y = 18, 168 + (i * 25)
         love.graphics.setFont(self.font)
-        love.graphics.setColor(1, 1, 1)
+        love.graphics.setColor(PALETTE["world_text"])
         love.graphics.push()
         if not party:drawPowerStat(i, x, y, self) then
-            love.graphics.setColor(0.25, 0.25, 0.25)
+            love.graphics.setColor(PALETTE["world_dark_gray"])
             love.graphics.print("???", x, y)
         end
         love.graphics.pop()
