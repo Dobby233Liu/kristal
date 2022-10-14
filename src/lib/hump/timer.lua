@@ -36,9 +36,14 @@ local function updateTimerHandle(handle)
         --   during = <function>,
         --   limit = <number>,
         --   count = <number>,
+        --   paused = <boolean>
         -- }
+        if handle.paused then return end
+
         handle.time = handle.time + DT
-        handle.during(math.max(handle.limit - handle.time, 0))
+        if handle.during(math.max(handle.limit - handle.time, 0)) == false then
+            handle.count = 0
+        end
 
         while handle.time >= handle.limit and handle.count > 0 do
             if handle.after(handle.after) == false then
@@ -73,8 +78,32 @@ function Timer:update()
     end
 end
 
+function Timer:pause(handle)
+    if handle then
+        if self.functions[handle] then
+            handle.paused = true
+        end
+    else
+        for handle in pairs(self.functions) do
+            handle.paused = true
+        end
+    end
+end
+
+function Timer:unpause(handle)
+    if handle then
+        if self.functions[handle] then
+            handle.paused = false
+        end
+    else
+        for handle in pairs(self.functions) do
+            handle.paused = false
+        end
+    end
+end
+
 function Timer:during(delay, during, after)
-    local handle = { time = 0, during = during, after = after or _nothing_, limit = delay, count = 1 }
+    local handle = { time = 0, during = during, after = after or _nothing_, limit = delay, count = 1, paused = false }
     self.functions[handle] = true
     return handle
 end
@@ -85,12 +114,15 @@ end
 
 function Timer:every(delay, after, count)
     local count = count or math.huge -- exploit below: math.huge - 1 = math.huge
-    local handle = { time = 0, during = _nothing_, after = after, limit = delay, count = count }
+    local handle = { time = 0, during = _nothing_, after = after, limit = delay, count = count, paused = false }
     self.functions[handle] = true
     return handle
 end
 
 function Timer:cancel(handle)
+    if type(handle) == "table" and handle.handle then
+        handle = handle.handle
+    end
     self.functions[handle] = nil
 end
 
@@ -99,11 +131,13 @@ function Timer:clear()
 end
 
 function Timer:script(f)
+    local container = { handle = nil }
     local co = coroutine.wrap(f)
     co(function(t)
-        self:after(t or 0, co)
+        container.handle = self:after(t or 0, co)
         coroutine.yield()
     end)
+    return container
 end
 
 Timer.tween = setmetatable({

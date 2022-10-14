@@ -8,7 +8,7 @@ function Map:init(world, data)
     if data and data.full_path then
         local map_path = data.full_path
         map_path = Utils.split(map_path, "/")
-        map_path = Utils.join(map_path, "/", 1, #map_path - 1)
+        map_path = table.concat(map_path, "/", 1, #map_path - 1)
         self.full_map_path = map_path
     else
         self.full_map_path = Mod and Mod.info.path or ""
@@ -61,7 +61,7 @@ function Map:init(world, data)
     self.hitboxes_by_name = {}
 
     if data then
-        self:populateTilesets(data.tilesets)
+        self:populateTilesets(data.tilesets or {})
     end
 
     self.depth_per_layer = 0.1 -- its not perfect, but i doubt anyone will have 1000 layers
@@ -121,6 +121,11 @@ end
 function Map:getFlag(flag, default)
     local uid = self:getUniqueID()
     return Game:getFlag(uid..":"..flag, default)
+end
+
+function Map:addFlag(flag, amount)
+    local uid = self:getUniqueID()
+    return Game:addFlag(uid..":"..flag, amount)
 end
 
 function Map:getMarker(name)
@@ -778,7 +783,7 @@ function Map:getTileObjectRect(data)
     local gid = Utils.parseTileGid(data.gid)
     local tileset = self:getTileset(gid)
 
-    local origin = TileObject.ORIGINS[tileset.object_alignment] or TileObject.ORIGINS["unspecified"]
+    local origin = Tileset.ORIGINS[tileset.object_alignment] or Tileset.ORIGINS["unspecified"]
 
     return data.x - (origin[1] * data.width), data.y - (origin[2] * data.height), data.width, data.height
 end

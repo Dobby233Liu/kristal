@@ -55,14 +55,12 @@ function Arena:setShape(shape)
 
     self.border_line = {Utils.unpackPolygon(Utils.getPolygonOffset(self.shape, self.line_width/2))}
 
-    local edges = Utils.getPolygonEdges(self.shape)
-
-    self.clockwise = Utils.isPolygonClockwise(edges)
+    self.clockwise = Utils.isPolygonClockwise(self.shape)
 
     self.area_collider = PolygonCollider(self, Utils.copy(shape, true))
 
     self.collider.colliders = {}
-    for _,v in ipairs(edges) do
+    for _,v in ipairs(Utils.getPolygonEdges(self.shape)) do
         table.insert(self.collider.colliders, LineCollider(self, v[1][1], v[1][2], v[2][1], v[2][2]))
     end
 end
@@ -115,7 +113,7 @@ function Arena:onAdd(parent)
             local afterimg = ArenaSprite(self, center_x, center_y)
             afterimg:setOrigin(0.5, 0.5)
             afterimg:setScale(progress, progress)
-            afterimg:fadeOutAndRemove()
+            afterimg:fadeOutSpeedAndRemove()
             afterimg.background = false
             afterimg.alpha = 0.6 - (0.5 * progress)
             afterimg.rotation = (math.pi) * (1 - progress)
@@ -156,7 +154,7 @@ function Arena:onRemove(parent)
             local afterimg = ArenaSprite(self, orig_sprite.x, orig_sprite.y)
             afterimg:setOrigin(0.5, 0.5)
             afterimg:setScale(progress, progress)
-            afterimg:fadeOutAndRemove()
+            afterimg:fadeOutSpeedAndRemove()
             afterimg.background = false
             afterimg.alpha = 0.6 - (0.5 * progress)
             afterimg.rotation = rotation + ((math.pi) * (1 - progress))
