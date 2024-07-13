@@ -9,6 +9,7 @@
 ---@field sounds table<string, love.Source>
 ---@field sound_instances table<string, love.Source[]>
 ---@field quads table<string, love.Quad>
+---@field chair_cache table<number, table<number, love.ImageData>>
 ---
 ---@field saved_data table|nil
 ---
@@ -31,6 +32,8 @@ local self = Assets
 ---@field bubble_settings table<string, table>
 
 Assets.saved_data = nil
+Assets.chair = love.graphics.newImage("assets/sprites/kristal/chair.png")
+Assets.chair:setFilter("nearest", "nearest")
 
 function Assets.clear()
     self.loaded = false
@@ -55,6 +58,7 @@ function Assets.clear()
     self.sounds = {}
     self.sound_instances = {}
     self.quads = {}
+    self.chair_cache = {}
 end
 
 ---@param data Assets.data
@@ -93,6 +97,28 @@ end
 function Assets.parseData(data)
     -- thread can't create images, we do it here
     for key,image_data in pairs(data.texture_data) do
+        local orig_w, orig_h = image_data:getDimensions()
+
+        local pursue_chair
+        if self.chair_cache[orig_w] then
+            local cached = self.chair_cache[orig_w][orig_h]
+            if cached then
+                pursue_chair = cached
+            end
+        end
+        if not pursue_chair then
+            local resize_cv = love.graphics.newCanvas(orig_w, orig_h)
+            resize_cv:renderTo(function ()
+                love.graphics.draw(self.chair, 0, 0, 0, resize_cv:getWidth()/self.chair:getWidth(), resize_cv:getHeight()/self.chair:getHeight())
+            end)
+            pursue_chair = resize_cv:newImageData()
+            if not self.chair_cache[orig_w] then self.chair_cache[orig_w] = {} end
+            self.chair_cache[orig_w][orig_h] = pursue_chair
+            resize_cv:release()
+        end
+        image_data = pursue_chair
+        self.data.texture_data[key] = image_data
+
         self.data.texture[key] = love.graphics.newImage(image_data)
         self.texture_ids[self.data.texture[key]] = key
     end
