@@ -461,7 +461,6 @@ while true do
         end
 
         out_channel:push({ key = key, status = "finished", data = data })
-        profileKeyLoiter:stop()
         resetData()
         appleCake.flush()
     end
