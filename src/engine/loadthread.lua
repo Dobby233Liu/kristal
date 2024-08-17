@@ -425,14 +425,10 @@ while true do
         verbose = true
     elseif msg == "stop" then
         resetData()
+        appleCake.endSession()
         break
     elseif msg == "clearNow" then
         resetData()
-    elseif msg == "tryApplecakeEndSession" then
-        appleCake.flush()
-        appleCake.endSession()
-        out_channel:push({ status = "sessionEnded" })
-        appleCake.beginSession("profile_loader.json")
     else
         local key = msg.key or 0
         local baseDir = msg.dir or ""

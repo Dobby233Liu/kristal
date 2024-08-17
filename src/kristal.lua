@@ -302,9 +302,6 @@ function love.update(dt)
                     end
                 elseif msg.status == "loading" then
                     Kristal.Loader.message = msg.path
-                elseif msg.status == "sessionEnded" then
-                    Assets.playSound("bell")
-                    print("Tracing data is likely written")
                 end
             end
         end
