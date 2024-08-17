@@ -390,6 +390,7 @@ function loadPath(baseDir, loader, path, pre)
     if info then
         if info.type == "directory" and (loader ~= "mods" or path == "") then
             local files = love.filesystem.getDirectoryItems(full_path)
+            fileCounter = appleCake.counter("file", {#files}, fileCounter)
             for i, file in ipairs(files) do
                 if not pre or pre == "" or file:sub(1, #pre) == pre then
                     local new_path = (path == "" or path:sub(-1, -1) == "/") and (path .. file) or (path .. "/" .. file)
@@ -398,7 +399,6 @@ function loadPath(baseDir, loader, path, pre)
                 end
             end
         else
-            fileCounter = appleCake.counter("file", {1}, fileCounter)
             local fullPath = combinePath(baseDir, loaders[loader][1], path)
             fileProfile = appleCake.profile(fullPath, nil, fileProfile)
             loaders[loader][2](baseDir, path, combinePath(baseDir, loaders[loader][1], path))
