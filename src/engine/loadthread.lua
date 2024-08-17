@@ -416,7 +416,6 @@ out_channel = love.thread.getChannel("load_out")
 resetData()
 
 local profileLoaderHandling
-local profileKeyLoiter
 
 -- Thread loop
 while true do
@@ -437,7 +436,6 @@ while true do
         if type(msg.paths) == "string" then
             paths = { msg.paths }
         end
-        profileKeyLoiter = appleCake.profile("Load " .. tostring(msg.key) .. " - baseDir "..baseDir.. " paths " .. table.concat(paths, " "), nil, profileKeyLoiter)
 
         if loader == "all" then
             for k, _ in pairs(loaders) do
