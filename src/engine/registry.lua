@@ -65,43 +65,37 @@ Registry.paths = {
 
 ---@param preload boolean?
 function Registry.initialize(preload)
-    if not self.preload then
-        self.base_scripts = {}
+    self.base_scripts = {}
 
-        local chapter = Kristal.getModOption("chapter") or 2
-        Game.chapter = chapter
+    local chapter = Kristal.getModOption("chapter") or 2
+    Game.chapter = chapter
 
-        for _,path in ipairs(Utils.getFilesRecursive("data", ".lua")) do
-            local chunk = love.filesystem.load("data/"..path..".lua")
-            self.base_scripts["data/"..path] = chunk
-        end
-
-        Registry.initActors()
-    end
-    if not preload then
-        Registry.initGlobals()
-        Registry.initObjects()
-        Registry.initDrawFX()
-        Registry.initItems()
-        Registry.initSpells()
-        Registry.initPartyMembers()
-        Registry.initRecruits()
-        Registry.initEncounters()
-        Registry.initEnemies()
-        Registry.initWaves()
-        Registry.initBullets()
-        Registry.initCutscenes()
-        Registry.initEventScripts()
-        Registry.initTilesets()
-        Registry.initMaps()
-        Registry.initEvents()
-        Registry.initControllers()
-        Registry.initShops()
-
-        Kristal.callEvent(KRISTAL_EVENT.onRegistered)
+    for _,path in ipairs(Utils.getFilesRecursive("data", ".lua")) do
+        local chunk = love.filesystem.load("data/"..path..".lua")
+        self.base_scripts["data/"..path] = chunk
     end
 
-    self.preload = preload
+    Registry.initActors()
+    Registry.initGlobals()
+    Registry.initObjects()
+    Registry.initDrawFX()
+    Registry.initItems()
+    Registry.initSpells()
+    Registry.initPartyMembers()
+    Registry.initRecruits()
+    Registry.initEncounters()
+    Registry.initEnemies()
+    Registry.initWaves()
+    Registry.initBullets()
+    Registry.initCutscenes()
+    Registry.initEventScripts()
+    Registry.initTilesets()
+    Registry.initMaps()
+    Registry.initEvents()
+    Registry.initControllers()
+    Registry.initShops()
+
+    Kristal.callEvent(KRISTAL_EVENT.onRegistered)
 
     Hotswapper.updateFiles("registry")
 end

@@ -302,6 +302,9 @@ function love.update(dt)
                     end
                 elseif msg.status == "loading" then
                     Kristal.Loader.message = msg.path
+                elseif msg.status == "sessionEnded" then
+                    Assets.playSound("bell")
+                    print("Tracing data is likely written")
                 end
             end
         end
@@ -1107,6 +1110,8 @@ function Kristal.loadModAssets(id, asset_type, asset_paths, after)
         if load_count == 0 then
             -- Finish mod loading
             MOD_LOADING = false
+            Kristal.Loader.in_channel:push("clearNow")
+            --Kristal.Loader.in_channel:push("tryApplecakeEndSession")
 
             -- Call the after function
             after()

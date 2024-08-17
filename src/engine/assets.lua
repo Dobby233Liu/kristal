@@ -33,6 +33,54 @@ local self = Assets
 Assets.saved_data = nil
 
 function Assets.clear()
+    if self.data then
+        if self.data.texture then
+            for _, data in pairs(self.data.texture) do
+                if self.saved_data and not Utils.containsValue(self.saved_data.data.texture, data) then
+                    data:release()
+                end
+            end
+        end
+        if self.data.texture_data then
+            for _, data in pairs(self.data.texture_data) do
+                if self.saved_data and not Utils.containsValue(self.saved_data.data.texture_data, data) then
+                    data:release()
+                end
+            end
+        end
+        if self.data.fonts then
+            for _, data in pairs(self.data.fonts) do
+                if type(data) == "userdata" and self.saved_data and not Utils.containsValue(self.saved_data.data.fonts, data) then
+                    data:release()
+                end
+            end
+        end
+        if self.data.font_image_data then
+            for _, data in pairs(self.data.font_image_data) do
+                if self.saved_data and not Utils.containsValue(self.saved_data.data.font_image_data, data) then
+                    data:release()
+                end
+            end
+        end
+        if self.sounds then
+            for _, data in pairs(self.sounds) do
+                if self.saved_data and not Utils.containsValue(self.saved_data.sounds, data) then
+                    data:release()
+                end
+            end
+        end
+        if self.data.sound_data then
+            for _, data in pairs(self.data.sound_data) do
+                if self.saved_data and not Utils.containsValue(self.saved_data.data.sound_data, data) then
+                    data:release()
+                end
+            end
+        end
+    end
+    if Kristal.Loader.thread and Kristal.Loader.thread:isRunning() then
+        Kristal.Loader.in_channel:push("clearNow")
+    end
+    collectgarbage("collect")
     self.loaded = false
     self.data = {
         texture = {},
@@ -59,7 +107,7 @@ end
 
 ---@param data Assets.data
 function Assets.loadData(data)
-    Utils.merge(self.data, data, true)
+    Utils.merge(self.data, data, true, 1)
 
     self.parseData(data)
 
@@ -165,7 +213,7 @@ function Assets.parseData(data)
         self.sounds[key] = src
     end
     -- may be a memory hog, we clone the existing source so we dont need the sound data anymore
-    --self.data.sound_data = {}
+    self.data.sound_data = {}
 end
 
 function Assets.update()

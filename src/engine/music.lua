@@ -193,6 +193,7 @@ function Music:remove()
     Utils.removeFromTable(_handlers, self)
     if self.source then
         self.source:stop()
+        self.source:release()
         self.source = nil
     end
     self.started = false

@@ -2,6 +2,11 @@
 require("love.image")
 require("love.sound")
 
+local appleCake = require("src.lib.AppleCake.AppleCake")(true) -- Set to false will remove the profiling tool from the project
+appleCake.setBuffer(true) -- Buffer any profile calls to increase performance
+appleCake.beginSession("profile_loader.json")
+appleCake.setName("Loader")
+
 json = require("src.lib.json")
 
 verbose = false
@@ -358,6 +363,8 @@ local loaders = {
     end },
 }
 
+local fileCounter
+local fileProfile
 function loadPath(baseDir, loader, path, pre)
     if path_loaded[loader][path] then return end
 
@@ -374,6 +381,7 @@ function loadPath(baseDir, loader, path, pre)
             parent_path = parent_path .. (i > 1 and "/" or "") .. dirs[i]
         end
         loadPath(baseDir, loader, parent_path, dirs[#dirs]:sub(1, -2))
+        appleCake.countMemory()
         return
     end
 
@@ -382,14 +390,20 @@ function loadPath(baseDir, loader, path, pre)
     if info then
         if info.type == "directory" and (loader ~= "mods" or path == "") then
             local files = love.filesystem.getDirectoryItems(full_path)
-            for _, file in ipairs(files) do
+            for i, file in ipairs(files) do
                 if not pre or pre == "" or file:sub(1, #pre) == pre then
                     local new_path = (path == "" or path:sub(-1, -1) == "/") and (path .. file) or (path .. "/" .. file)
                     loadPath(baseDir, loader, new_path)
+                    appleCake.countMemory()
                 end
             end
         else
+            fileCounter = appleCake.counter("file", {1}, fileCounter)
+            local fullPath = combinePath(baseDir, loaders[loader][1], path)
+            fileProfile = appleCake.profile(fullPath, nil, fileProfile)
             loaders[loader][2](baseDir, path, combinePath(baseDir, loaders[loader][1], path))
+            fileProfile:stop()
+            appleCake.countMemory()
         end
     end
 end
@@ -401,13 +415,24 @@ out_channel = love.thread.getChannel("load_out")
 -- Reset data once first
 resetData()
 
+local profileLoaderHandling
+local profileKeyLoiter
+
 -- Thread loop
 while true do
     local msg = in_channel:demand()
     if msg == "verbose" then
         verbose = true
     elseif msg == "stop" then
+        resetData()
         break
+    elseif msg == "clearNow" then
+        resetData()
+    elseif msg == "tryApplecakeEndSession" then
+        appleCake.flush()
+        appleCake.endSession()
+        out_channel:push({ status = "sessionEnded" })
+        appleCake.beginSession("profile_loader.json")
     else
         local key = msg.key or 0
         local baseDir = msg.dir or ""
@@ -416,23 +441,34 @@ while true do
         if type(msg.paths) == "string" then
             paths = { msg.paths }
         end
+        profileKeyLoiter = appleCake.profile("Load " .. tostring(msg.key) .. " - baseDir "..baseDir.. " paths " .. table.concat(paths, " "), nil, profileKeyLoiter)
 
         if loader == "all" then
             for k, _ in pairs(loaders) do
                 -- dont load mods when we load with "all"
                 if k ~= "mods" then
+                    profileLoaderHandling = appleCake.profile(baseDir.. " - " ..k, nil, profileLoaderHandling)
                     for _, path in ipairs(paths) do
+                        --appleCake.mark(k .. "-" .. (path or ""))
                         loadPath(baseDir, k, path)
+                        appleCake.countMemory()
                     end
+                    profileLoaderHandling:stop()
                 end
             end
         else
+            profileLoaderHandling = appleCake.profile(baseDir.. " - " ..loader, nil, profileLoaderHandling)
             for _, path in ipairs(paths) do
+                --appleCake.mark(loader .. "-" .. (path or ""))
                 loadPath(baseDir, loader, path)
+                appleCake.countMemory()
             end
+            profileLoaderHandling:stop()
         end
 
         out_channel:push({ key = key, status = "finished", data = data })
+        profileKeyLoiter:stop()
         resetData()
+        appleCake.flush()
     end
 end

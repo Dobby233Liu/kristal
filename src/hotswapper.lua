@@ -1,6 +1,6 @@
 local Hotswapper = {}
 
-local enabled = true
+local enabled = false
 
 local dir = love.filesystem.getDirectoryItems
 local time = love.timer.getTime
