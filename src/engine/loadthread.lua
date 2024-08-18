@@ -426,6 +426,7 @@ local markModUnloadingStarted
 -- Thread loop
 while true do
     local msg = in_channel:demand()
+    appleCake.countMemory()
     if msg == "verbose" then
         verbose = true
     elseif msg == "stop" then
@@ -488,4 +489,5 @@ while true do
         appleCake.countMemory()
         appleCake.flush()
     end
+    appleCake.countMemory()
 end
