@@ -30,6 +30,7 @@ function DebugSystem:init()
     self.current_selecting = 1
 
     self.menus = {}
+    self.exclusive_menus = {}
 
     self:refresh()
 
@@ -312,11 +313,21 @@ end
 
 function DebugSystem:refresh()
     self.menus = {}
+    self.exclusive_menus = {}
+    self.exclusive_menus["OVERWORLD"] = {"encounter_select", "select_shop", "select_map", "cutscene_select"}
+    self.exclusive_menus["BATTLE"] = {"wave_select"}
     self:registerMenu("main", "~ KRISTAL DEBUG ~")
     self.current_menu = "main"
     self:registerDefaults()
     self:registerSubMenus()
     Kristal.callEvent(KRISTAL_EVENT.registerDebugOptions, self)
+end
+
+function DebugSystem:addToExclusiveMenu(state, id)
+    if not self.exclusive_menus[state] then
+        self.exclusive_menus[state] = {}
+    end
+    table.insert(self.exclusive_menus[state], id)
 end
 
 function DebugSystem:fadeMusicOut()
@@ -961,11 +972,16 @@ function DebugSystem:onKeyPressed(key, is_repeat)
             end
         end
 
-        if Input.is("down", key) and (not is_repeat or self.current_selecting < #Game.flags) then
+        local counter = 0
+        for _,flag in pairs(Game.flags) do
+            counter = counter + 1
+        end
+        
+        if Input.is("down", key) and (not is_repeat or self.current_selecting < counter) then
             Assets.playSound("ui_move")
             self.current_selecting = self.current_selecting + 1
         end
-        if Input.is("up", key) and (not is_repeat or self.current_selecting > #Game.flags) then
+        if Input.is("up", key) and (not is_repeat or self.current_selecting > 1) then
             Assets.playSound("ui_move")
             self.current_selecting = self.current_selecting - 1
         end
@@ -1031,6 +1047,14 @@ function DebugSystem:update()
         else
             stage.timescale = math.min(stage.timescale + (DT / 0.6), 1)
             stage.active = true
+        end
+    end
+    
+    if self:isMenuOpen() then
+        for state,menus in pairs(self.exclusive_menus) do
+            if Utils.containsValue(menus, self.current_menu) and Game.state ~= state then
+                self:refresh()
+            end
         end
     end
     super.update(self)
