@@ -239,7 +239,7 @@ function love.quit()
 
     Kristal.saveConfig()
     if Kristal.Loader.thread and Kristal.Loader.thread:isRunning() then
-        Kristal.Loader.in_channel:push("stop")
+        Kristal.Loader.in_channel:supply("stop")
     end
 end
 
