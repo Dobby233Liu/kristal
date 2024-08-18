@@ -112,7 +112,7 @@ end
 
 ---@param data Assets.data
 function Assets.loadData(data)
-    Utils.merge(self.data, data, true, 1)
+    Utils.merge(self.data, data, true)
 
     self.parseData(data)
 

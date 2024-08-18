@@ -592,8 +592,7 @@ end
 ---@param deep? boolean # Whether shared table values between the two tables should also be merged.
 ---@return table tbl    # The initial table, now containing new values.
 ---
-function Utils.merge(tbl, other, deep, max_depth, _depth)
-    _depth = _depth or 1
+function Utils.merge(tbl, other, deep)
     if Utils.isArray(other) then
         -- If the source table is an array, just append the values
         -- to the end of the destination table.
@@ -602,10 +601,10 @@ function Utils.merge(tbl, other, deep, max_depth, _depth)
         end
     else
         for k,v in pairs(other) do
-            if deep and (not max_depth or _depth <= max_depth) and type(tbl[k]) == "table" and type(v) == "table" then
+            if deep and type(tbl[k]) == "table" and type(v) == "table" then
                 -- If we're deep merging and both values are tables,
                 -- merge the tables together.
-                Utils.merge(tbl[k], v, true, max_depth, _depth + 1)
+                Utils.merge(tbl[k], v, true)
             else
                 -- Otherwise, just copy the value over.
                 tbl[k] = v
