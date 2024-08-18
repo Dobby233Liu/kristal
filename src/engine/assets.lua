@@ -54,7 +54,7 @@ function Assets.clear()
                     if type(data) == "userdata" then
                         data:release()
                     elseif type(data) == "table" then
-                        for _, font in pairs(data) do
+                        for _, font in ipairs(data) do
                             font:release()
                         end
                     end
