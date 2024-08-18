@@ -466,8 +466,9 @@ function Sprite:draw()
     end
     if self.texture then
         if self.wrap_texture_x or self.wrap_texture_y then
+            local screenw, screenh = love.graphics.getDimensions()
             local screen_l, screen_u = love.graphics.inverseTransformPoint(0, 0)
-            local screen_r, screen_d = love.graphics.inverseTransformPoint(SCREEN_WIDTH, SCREEN_HEIGHT)
+            local screen_r, screen_d = love.graphics.inverseTransformPoint(screenw, screenh)
 
             local x1, y1 = math.min(screen_l, screen_r), math.min(screen_u, screen_d)
             local x2, y2 = math.max(screen_l, screen_r), math.max(screen_u, screen_d)

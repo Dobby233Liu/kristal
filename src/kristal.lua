@@ -140,13 +140,7 @@ function love.load(args)
 
         love.graphics.reset()
 
-        Draw.pushCanvas(SCREEN_CANVAS)
         love.graphics.clear(0, 0, 0, 1)
-        orig(...)
-        Kristal.Stage:draw()
-        Kristal.Overlay:draw()
-        Draw.popCanvas()
-
         Draw.setColor(1, 1, 1, 1)
 
         if Kristal.bordersEnabled() then
@@ -176,10 +170,16 @@ function love.load(args)
             LAST_BORDER = border
         end
 
-        -- Draw the game canvas
-        love.graphics.translate(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
         love.graphics.scale(Kristal.getGameScale())
-        Draw.draw(SCREEN_CANVAS, -SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2)
+        love.graphics.push()
+        local winw, winh = love.graphics.getWidth()/Kristal.getGameScale(), love.graphics.getHeight()/Kristal.getGameScale()
+        love.graphics.translate((winw - SCREEN_WIDTH)/2, (winh - SCREEN_HEIGHT)/2)
+        orig(...)
+        Kristal.Stage:draw()
+        love.graphics.pop()
+        Kristal.Overlay:draw()
+
+        Draw.setColor(1, 1, 1, 1)
 
         love.graphics.reset()
         love.graphics.scale(Kristal.getGameScale())
@@ -530,16 +530,8 @@ function Kristal.errorHandler(msg)
         end
     end
 
-    local window_scale = 1
-    if Kristal.Config and Kristal.Config["borders"] ~= "off" then
-        window_scale = math.min(love.graphics.getWidth() / (BORDER_WIDTH * BORDER_SCALE),
-                                love.graphics.getHeight() / (BORDER_HEIGHT * BORDER_SCALE))
-    else
-        window_scale = math.min(love.graphics.getWidth() / SCREEN_WIDTH, love.graphics.getHeight() / SCREEN_HEIGHT)
-    end
-
-    local window_width = love.graphics.getWidth() / window_scale
-    local window_height = love.graphics.getHeight() / window_scale
+    local window_width = love.graphics.getWidth() / Kristal.getGameScale()
+    local window_height = love.graphics.getHeight() / Kristal.getGameScale()
 
     -- Reset state.
     if Input then Input.clear(nil, true) end

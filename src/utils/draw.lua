@@ -198,14 +198,16 @@ end
 ---@param x2? number
 ---@param y2? number
 function Draw.scissorPoints(x1, y1, x2, y2)
+    local screenw, screenh = love.graphics.getDimensions()
+
     local scrx, scry = love.graphics.inverseTransformPoint(0, 0)
-    local scrx2, scry2 = love.graphics.inverseTransformPoint(SCREEN_WIDTH, SCREEN_HEIGHT)
+    local scrx2, scry2 = love.graphics.inverseTransformPoint(screenw, screenh)
 
     local tx1, ty1 = love.graphics.transformPoint(x1 or scrx, y1 or scry)
     local tx2, ty2 = love.graphics.transformPoint(x2 or scrx2, y2 or scry2)
 
-    local sx, sy = Utils.clamp(tx1, 0, SCREEN_WIDTH), Utils.clamp(ty1, 0, SCREEN_HEIGHT)
-    local sx2, sy2 = Utils.clamp(tx2, 0, SCREEN_WIDTH), Utils.clamp(ty2, 0, SCREEN_HEIGHT)
+    local sx, sy = Utils.clamp(tx1, 0, screenw), Utils.clamp(ty1, 0, screenh)
+    local sx2, sy2 = Utils.clamp(tx2, 0, screenw), Utils.clamp(ty2, 0, screenh)
 
     local min_sx, min_sy = math.min(sx, sx2), math.min(sy, sy2)
     local max_sx, max_sy = math.max(sx, sx2), math.max(sy, sy2)
@@ -342,8 +344,10 @@ function Draw.drawWrapped(drawable, wrap_x, wrap_y, x, y, r, sx, sy, ox, oy, kx,
         if ox ~= 0 or oy ~= 0 then love.graphics.translate(-ox, -oy) end
     end
 
+    local screenw, screenh = love.graphics.getDimensions()
+
     local screen_l, screen_u = love.graphics.inverseTransformPoint(0, 0)
-    local screen_r, screen_d = love.graphics.inverseTransformPoint(SCREEN_WIDTH, SCREEN_HEIGHT)
+    local screen_r, screen_d = love.graphics.inverseTransformPoint(screenw, screenh)
 
     local x1, y1 = math.min(screen_l, screen_r), math.min(screen_u, screen_d)
     local x2, y2 = math.max(screen_l, screen_r), math.max(screen_u, screen_d)
@@ -436,7 +440,8 @@ function Draw.rectangle(type, x, y, width, height)
         Draw.pushScissor()
         Draw.scissor(x, y, width, height)
 
-        for line = 0, math.max(SCREEN_WIDTH, SCREEN_HEIGHT) * 2, 8 do
+        local screenw, screenh = love.graphics.getDimensions()
+        for line = 0, math.max(screenw, screenh) * 2, 8 do
             love.graphics.line(0, line, line, 0)
         end
 

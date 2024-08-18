@@ -382,7 +382,7 @@ function ActorSprite:draw()
 
     if self.texture and self.aura then
         -- Use additive blending if the enemy is not being drawn to a canvas
-        if love.graphics.getCanvas() == SCREEN_CANVAS then
+        if not love.graphics.getCanvas() then
             love.graphics.setBlendMode("add")
         end
 
