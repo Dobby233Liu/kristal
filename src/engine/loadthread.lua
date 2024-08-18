@@ -430,19 +430,25 @@ while true do
         verbose = true
     elseif msg == "stop" then
         resetData()
+        appleCake.countMemory()
         appleCake.endSession()
         break
     elseif msg == "clearNow" then
         resetData()
+        appleCake.countMemory()
     elseif msg.scriptsLoading ~= nil then
         markScriptLoadingStarted[msg.scriptsLoading] = appleCake.profile(msg.scriptsLoading.." scripts loading", nil, markScriptLoadingStarted[msg.scriptsLoading])
+        appleCake.countMemory()
     elseif msg.scriptsLoaded ~= nil then
         markScriptLoadingStarted[msg.scriptsLoaded]:stop()
+        appleCake.countMemory()
         appleCake.flush()
     elseif msg == "modUnloading" then
         markModUnloadingStarted = appleCake.profile("mod unloading", nil, markModUnloadingStarted)
+        appleCake.countMemory()
     elseif msg == "modUnloaded" then
         markModUnloadingStarted:stop()
+        appleCake.countMemory()
         appleCake.flush()
     else
         local key = msg.key or 0
@@ -479,6 +485,7 @@ while true do
         out_channel:push({ key = key, status = "finished", data = data })
         resetData()
         fileCounter = appleCake.counter("file", {0}, fileCounter)
+        appleCake.countMemory()
         appleCake.flush()
     end
 end
