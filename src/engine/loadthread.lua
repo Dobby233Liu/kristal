@@ -417,6 +417,8 @@ resetData()
 
 local profileLoaderHandling
 
+local markScriptLoadingStarted
+local markModUnloadingStarted
 -- Thread loop
 while true do
     local msg = in_channel:demand()
@@ -428,6 +430,16 @@ while true do
         break
     elseif msg == "clearNow" then
         resetData()
+    elseif msg == "scriptsLoading" then
+        markScriptLoadingStarted = appleCake.profile("script loading", nil, markScriptLoadingStarted)
+    elseif msg == "scriptsLoaded" then
+        markScriptLoadingStarted:stop()
+        appleCake.flush()
+    elseif msg == "modUnloading" then
+        markModUnloadingStarted = appleCake.profile("mod unloading", nil, markModUnloadingStarted)
+    elseif msg == "modUnloaded" then
+        markModUnloadingStarted:stop()
+        appleCake.flush()
     else
         local key = msg.key or 0
         local baseDir = msg.dir or ""

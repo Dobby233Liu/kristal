@@ -80,7 +80,6 @@ function Assets.clear()
     if Kristal.Loader.thread and Kristal.Loader.thread:isRunning() then
         Kristal.Loader.in_channel:push("clearNow")
     end
-    collectgarbage("collect")
     self.loaded = false
     self.data = {
         texture = {},

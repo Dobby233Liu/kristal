@@ -143,6 +143,7 @@ end
 function Mods.getAndLoadMod(id)
     local mod = self.getMod(id)
 
+    Kristal.Loader.in_channel:supply("scriptsLoading")
     if not mod.loaded_scripts then
         for _,path in ipairs(Utils.getFilesRecursive(mod.path, ".lua")) do
             mod.script_chunks[path] = love.filesystem.load(mod.path.."/"..path..".lua")
@@ -156,6 +157,7 @@ function Mods.getAndLoadMod(id)
 
         mod.loaded_scripts = true
     end
+    Kristal.Loader.in_channel:supply("scriptsLoaded")
 
     return mod
 end

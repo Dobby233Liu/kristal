@@ -26,6 +26,8 @@ if not HOTSWAPPING then
 end
 
 function love.load(args)
+    jit.opt.start(3, "maxtrace=8000", "maxrecord=16000", "minstitch=3", "maxmcode=40960")
+
     --[[
         Launch args:
             --wait: Pauses the load screen until a key is pressed
@@ -865,14 +867,17 @@ function Kristal.getVolume()
     return Kristal.Config["masterVolume"]
 end
 
+local debugLoadedChunksPaths
 --- Clears all state expected to be changed by mods. \
 --- Called internally when exiting or reloading a mod.
 function Kristal.clearModState()
+    Kristal.Loader.in_channel:supply("modUnloading")
     -- Clear disruptive active globals
     Object._clearCache()
     Draw._clearStacks()
     -- End the current mod
     Kristal.callEvent(KRISTAL_EVENT.unload)
+    local mod_path = Mod.info.path
     Mod = nil
 
     Kristal.Mods.clear()
@@ -893,11 +898,25 @@ function Kristal.clearModState()
     Kristal.States["Game"] = require("src.engine.game.game")
     Game = Kristal.States["Game"]
 
-    Kristal.setDesiredWindowTitleAndIcon()
-
     -- Restore assets and registry
     Assets.restoreData()
     Registry.initialize()
+
+    for path,_ in pairs(package.loaded) do
+        if Utils.startsWith(path, mod_path) then
+            package.loaded[path] = nil
+        end
+    end
+    for path,_ in pairs(package.loaded) do
+        if not Utils.containsValue(debugLoadedChunksPaths, path) then
+            print(path)
+        end
+    end
+
+    Kristal.setDesiredWindowTitleAndIcon()
+
+    collectgarbage("collect")
+    Kristal.Loader.in_channel:supply("modUnloaded")
 end
 
 --- Exits the current mod and returns to the Kristal menu.
@@ -1110,6 +1129,7 @@ function Kristal.loadModAssets(id, asset_type, asset_paths, after)
             Kristal.Loader.in_channel:push("clearNow")
             --Kristal.Loader.in_channel:push("tryApplecakeEndSession")
 
+            debugLoadedChunksPaths = Utils.getKeys(package.loaded)
             -- Call the after function
             after()
         end
