@@ -1700,12 +1700,15 @@ function Object:fullDraw(no_children, dont_transform)
         RUNTIME = RUNTIME + self._runtime_draw_offset
     end
     local processing_fx, fx_transform, fx_screen = self:shouldProcessDrawFX()
-    local fx_off_x, fx_off_y = math.floor(SCREEN_WIDTH / 2 - self.width / 2), math.floor(SCREEN_HEIGHT / 2 -
+    local screen_w, screen_h = love.graphics.getDimensions()
+    screen_w = screen_w / Kristal.getGameScale()
+    screen_h = screen_h / Kristal.getGameScale()
+    local fx_off_x, fx_off_y = math.floor(screen_w / 2 - self.width / 2), math.floor(screen_h / 2 -
         self.height / 2)
     local canvas = nil
     if processing_fx then
         Draw.pushCanvasLocks()
-        canvas = Draw.pushCanvas(SCREEN_WIDTH, SCREEN_HEIGHT, { keep_transform = not fx_transform })
+        canvas = Draw.pushCanvas(screen_w, screen_h, { keep_transform = not fx_transform })
         if fx_transform then
             love.graphics.translate(fx_off_x, fx_off_y)
         end
@@ -1723,7 +1726,7 @@ function Object:fullDraw(no_children, dont_transform)
                 love.graphics.replaceTransform(current_transform)
             end
             if fx_screen then
-                local screen_canvas = Draw.pushCanvas(SCREEN_WIDTH, SCREEN_HEIGHT, { keep_transform = true })
+                local screen_canvas = Draw.pushCanvas(screen_w, screen_h, { keep_transform = true })
                 Draw.setColor(1, 1, 1)
                 Draw.draw(final_canvas, -fx_off_x, -fx_off_y)
                 Draw.popCanvas(true)
@@ -1767,9 +1770,13 @@ end
 function Object:processDrawFX(canvas, transformed)
     table.stable_sort(self.draw_fx, FXBase.SORTER)
 
+    local screen_w, screen_h = love.graphics.getDimensions()
+    screen_w = screen_w / Kristal.getGameScale()
+    screen_h = screen_h / Kristal.getGameScale()
+
     for _, fx in ipairs(self.draw_fx) do
         if fx:isActive(self) and (transformed == nil or fx.transformed == transformed) then
-            local next_canvas = Draw.pushCanvas(SCREEN_WIDTH, SCREEN_HEIGHT)
+            local next_canvas = Draw.pushCanvas(screen_w, screen_h)
             Draw.setColor(1, 1, 1)
             fx:draw(canvas, self)
             Draw.popCanvas(true)

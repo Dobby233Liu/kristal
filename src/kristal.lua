@@ -222,12 +222,16 @@ function love.draw()
         Utils.pushPerformance("Total")
     end
 
-    -- We need to draw the game to a canvas, so we can scale
-    -- Also, to draw the borders later
     Draw.reset()
 
-    Draw.pushCanvas(SCREEN_CANVAS)
     love.graphics.clear(0, 0, 0, 1)
+
+    -- Draw borders if possible
+    Kristal.drawBorders()
+
+    love.graphics.translate(Kristal.getSideOffsets())
+    love.graphics.scale(Kristal.getGameScale())
+    Draw.setColor(1, 1, 1, 1)
 
     -- Draw the current state
     local state = Kristal.getState()
@@ -238,17 +242,6 @@ function love.draw()
     -- Draw the stage & overlay
     Kristal.Stage:draw()
     Kristal.Overlay:draw()
-
-    Draw.popCanvas()
-
-    -- Draw borders if possible
-    Kristal.drawBorders()
-
-    -- Draw the game canvas
-    love.graphics.translate(love.graphics.getWidth() / 2, love.graphics.getHeight() / 2)
-    love.graphics.scale(Kristal.getGameScale())
-    Draw.setColor(1, 1, 1, 1)
-    Draw.draw(SCREEN_CANVAS, -SCREEN_WIDTH / 2, -SCREEN_HEIGHT / 2)
 
     Draw.reset()
     love.graphics.scale(Kristal.getGameScale())
@@ -665,16 +658,8 @@ function Kristal.errorHandler(msg)
         end
     end
 
-    local window_scale = 1
-    if Kristal.Config and Kristal.Config["borders"] ~= "off" then
-        window_scale = math.min(love.graphics.getWidth() / (BORDER_WIDTH * BORDER_SCALE),
-                                love.graphics.getHeight() / (BORDER_HEIGHT * BORDER_SCALE))
-    else
-        window_scale = math.min(love.graphics.getWidth() / SCREEN_WIDTH, love.graphics.getHeight() / SCREEN_HEIGHT)
-    end
-
-    local window_width = love.graphics.getWidth() / window_scale
-    local window_height = love.graphics.getHeight() / window_scale
+    local window_width = love.graphics.getWidth() / Kristal.getGameScale()
+    local window_height = love.graphics.getHeight() / Kristal.getGameScale()
 
     -- Reset state.
     if Input then Input.clear(nil, true) end
@@ -753,7 +738,7 @@ function Kristal.errorHandler(msg)
         local ypos = pos
         love.graphics.origin()
         love.graphics.clear(0, 0, 0, 1)
-        love.graphics.scale(window_scale)
+        love.graphics.scale(Kristal.getGameScale())
 
         Draw.setColor(1, 1, 1, 1)
         love.graphics.setFont(smaller_font)
