@@ -64,7 +64,9 @@ Registry.paths = {
 }
 
 ---@param preload boolean?
-function Registry.initialize(preload)
+function Registry.initialize()
+    Kristal.Loader.in_channel:push({ scriptsLoading = "registry" })
+
     self.base_scripts = {}
 
     local chapter = Kristal.getModOption("chapter") or 2
@@ -98,6 +100,8 @@ function Registry.initialize(preload)
     Kristal.callEvent(KRISTAL_EVENT.onRegistered)
 
     Hotswapper.updateFiles("registry")
+
+    Kristal.Loader.in_channel:push({ scriptsLoaded = "registry" })
 end
 
 function Registry.restoreOverridenGlobals()
@@ -943,7 +947,6 @@ function Registry.iterScripts(base_path, exclude_folder)
         end
     end
 
-    Kristal.Loader.in_channel:push({ scriptsLoading = "registry" })
     parse(base_path, self.base_scripts)
     if Mod then
         for _,library in Kristal.iterLibraries() do
@@ -951,7 +954,6 @@ function Registry.iterScripts(base_path, exclude_folder)
         end
         parse("scripts/"..base_path, Mod.info.script_chunks)
     end
-    Kristal.Loader.in_channel:push({ scriptsLoaded = "registry" })
 
     CLASS_NAME_GETTER = DEFAULT_CLASS_NAME_GETTER
 

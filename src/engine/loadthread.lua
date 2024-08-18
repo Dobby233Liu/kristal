@@ -435,7 +435,7 @@ while true do
     elseif msg == "clearNow" then
         resetData()
     elseif msg.scriptsLoading ~= nil then
-        markScriptLoadingStarted[msg.scriptsLoading] = appleCake.profile(msg.scriptsLoading.."scripts loading", nil, markScriptLoadingStarted[msg.scriptsLoading])
+        markScriptLoadingStarted[msg.scriptsLoading] = appleCake.profile(msg.scriptsLoading.." scripts loading", nil, markScriptLoadingStarted[msg.scriptsLoading])
     elseif msg.scriptsLoaded ~= nil then
         markScriptLoadingStarted[msg.scriptsLoaded]:stop()
         appleCake.flush()

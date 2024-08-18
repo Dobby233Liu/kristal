@@ -56,6 +56,7 @@ function Loading:beginLoad()
         Assets.saveData()
 
         Kristal.setDesiredWindowTitleAndIcon()
+        collectgarbage("collect")
     end)
 end
 
