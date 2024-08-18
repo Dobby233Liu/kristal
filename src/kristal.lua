@@ -596,7 +596,7 @@ function Kristal.errorHandler(msg)
         local ypos = pos
         love.graphics.origin()
         love.graphics.clear(0, 0, 0, 1)
-        love.graphics.scale(window_scale)
+        love.graphics.scale(Kristal.getGameScale())
 
         Draw.setColor(1, 1, 1, 1)
         love.graphics.setFont(smaller_font)
