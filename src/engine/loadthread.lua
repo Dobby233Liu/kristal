@@ -417,7 +417,11 @@ resetData()
 
 local profileLoaderHandling
 
-local markScriptLoadingStarted
+local markScriptLoadingStarted = {
+    ["mod main"] = nil,
+    ["lib main"] = nil,
+    ["registry"] = nil
+}
 local markModUnloadingStarted
 -- Thread loop
 while true do
@@ -430,10 +434,10 @@ while true do
         break
     elseif msg == "clearNow" then
         resetData()
-    elseif msg == "scriptsLoading" then
-        markScriptLoadingStarted = appleCake.profile("script loading", nil, markScriptLoadingStarted)
-    elseif msg == "scriptsLoaded" then
-        markScriptLoadingStarted:stop()
+    elseif msg.scriptsLoading ~= nil then
+        markScriptLoadingStarted[msg.scriptsLoading] = appleCake.profile(msg.scriptsLoading.."scripts loading", nil, markScriptLoadingStarted[msg.scriptsLoading])
+    elseif msg.scriptsLoaded ~= nil then
+        markScriptLoadingStarted[msg.scriptsLoaded]:stop()
         appleCake.flush()
     elseif msg == "modUnloading" then
         markModUnloadingStarted = appleCake.profile("mod unloading", nil, markModUnloadingStarted)

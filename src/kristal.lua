@@ -92,6 +92,13 @@ function love.load(args)
     love.filesystem.createDirectory("mods")
     love.filesystem.createDirectory("saves")
 
+    -- start load thread
+    Kristal.Loader.in_channel = love.thread.getChannel("load_in")
+    Kristal.Loader.out_channel = love.thread.getChannel("load_out")
+
+    Kristal.Loader.thread = love.thread.newThread("src/engine/loadthread.lua")
+    Kristal.Loader.thread:start()
+
     -- default registry
     Registry.initialize()
 
@@ -207,13 +214,6 @@ function love.load(args)
             PERFORMANCE_TEST = nil
         end
     end)
-
-    -- start load thread
-    Kristal.Loader.in_channel = love.thread.getChannel("load_in")
-    Kristal.Loader.out_channel = love.thread.getChannel("load_out")
-
-    Kristal.Loader.thread = love.thread.newThread("src/engine/loadthread.lua")
-    Kristal.Loader.thread:start()
 
     -- TARGET_MOD being already set -> is defined by the mod developer
     -- and we wouldn't want the user to overwrite it
@@ -1048,6 +1048,7 @@ function Kristal.loadMod(id, save_id, save_name, after)
     Mod = Mod or { info = mod, libs = {} }
 
     -- Check for mod.lua
+    Kristal.Loader.in_channel:supply({ scriptsLoading = "mod main" })
     if mod.script_chunks["mod"] then
         -- Execute mod.lua
         local result = mod.script_chunks["mod"]()
@@ -1059,10 +1060,12 @@ function Kristal.loadMod(id, save_id, save_name, after)
             end
         end
     end
+    Kristal.Loader.in_channel:supply({ scriptsLoaded = "mod main" })
 
     -- Create the Mod.libs table, which similarly to the
     -- Mod table, can contain a library's custom variables
     -- and functions with lib.info referncing the library data
+    Kristal.Loader.in_channel:supply({ scriptsLoading = "lib main" })
     Mod.libs = Mod.libs or {}
     for _, lib_id in ipairs(mod.lib_order) do
         local lib_info = mod.libs[lib_id]
@@ -1092,6 +1095,7 @@ function Kristal.loadMod(id, save_id, save_name, after)
         -- Add the current library to the libs table (again, with the real final value)
         Mod.libs[lib_id] = lib
     end
+    Kristal.Loader.in_channel:supply({ scriptsLoaded = "lib main" })
 
     Kristal.loadModAssets(mod.id, "all", "", after or function ()
         if Kristal.preInitMod(mod.id) then

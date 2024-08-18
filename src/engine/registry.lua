@@ -943,6 +943,7 @@ function Registry.iterScripts(base_path, exclude_folder)
         end
     end
 
+    Kristal.Loader.in_channel:push({ scriptsLoading = "registry" })
     parse(base_path, self.base_scripts)
     if Mod then
         for _,library in Kristal.iterLibraries() do
@@ -950,6 +951,7 @@ function Registry.iterScripts(base_path, exclude_folder)
         end
         parse("scripts/"..base_path, Mod.info.script_chunks)
     end
+    Kristal.Loader.in_channel:push({ scriptsLoaded = "registry" })
 
     CLASS_NAME_GETTER = DEFAULT_CLASS_NAME_GETTER
 
