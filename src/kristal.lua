@@ -877,7 +877,6 @@ function Kristal.clearModState()
     Draw._clearStacks()
     -- End the current mod
     Kristal.callEvent(KRISTAL_EVENT.unload)
-    local mod_path = Mod.info.path
     Mod = nil
 
     Kristal.Mods.clear()
@@ -902,20 +901,10 @@ function Kristal.clearModState()
     Assets.restoreData()
     Registry.initialize()
 
-    for path,_ in pairs(package.loaded) do
-        if Utils.startsWith(path, mod_path) then
-            package.loaded[path] = nil
-        end
-    end
-    for path,_ in pairs(package.loaded) do
-        if not Utils.containsValue(debugLoadedChunksPaths, path) then
-            print(path)
-        end
-    end
-
     Kristal.setDesiredWindowTitleAndIcon()
 
     collectgarbage("collect")
+    jit.flush()
     Kristal.Loader.in_channel:supply("modUnloaded")
 end
 
