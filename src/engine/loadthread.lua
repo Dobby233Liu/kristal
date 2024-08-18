@@ -478,6 +478,7 @@ while true do
 
         out_channel:push({ key = key, status = "finished", data = data })
         resetData()
+        fileCounter = appleCake.counter("file", {0}, fileCounter)
         appleCake.flush()
     end
 end
