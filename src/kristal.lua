@@ -867,7 +867,6 @@ function Kristal.getVolume()
     return Kristal.Config["masterVolume"]
 end
 
-local debugLoadedChunksPaths
 --- Clears all state expected to be changed by mods. \
 --- Called internally when exiting or reloading a mod.
 function Kristal.clearModState()
@@ -1120,9 +1119,7 @@ function Kristal.loadModAssets(id, asset_type, asset_paths, after)
             -- Finish mod loading
             MOD_LOADING = false
             Kristal.Loader.in_channel:push("clearNow")
-            --Kristal.Loader.in_channel:push("tryApplecakeEndSession")
 
-            debugLoadedChunksPaths = Utils.getKeys(package.loaded)
             -- Call the after function
             after()
         end
