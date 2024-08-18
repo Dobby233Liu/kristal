@@ -100,8 +100,8 @@ function Overlay:draw()
     if Kristal.Loader.message ~= "" then
         love.graphics.setFont(self.font)
         local text = Kristal.Loader.message
-        local x = love.graphics.getWidth() - self.font:getWidth(text) - 2
-        local y = love.graphics.getHeight() - self.font:getHeight() - 4
+        local x = love.graphics.getWidth()/Kristal.getGameScale() - self.font:getWidth(text) - 2
+        local y = love.graphics.getHeight()/Kristal.getGameScale() - self.font:getHeight() - 4
         Draw.setColor(0, 0, 0)
         for ox = -1, 1 do
             for oy = -1, 1 do
