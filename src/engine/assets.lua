@@ -50,8 +50,14 @@ function Assets.clear()
         end
         if self.data.fonts then
             for _, data in pairs(self.data.fonts) do
-                if type(data) == "userdata" and self.saved_data and not Utils.containsValue(self.saved_data.data.fonts, data) then
-                    data:release()
+                if self.saved_data and not Utils.containsValue(self.saved_data.data.fonts, data) then
+                    if type(data) == "userdata" then
+                        data:release()
+                    elseif type(data) == "table" then
+                        for _, font in pairs(data) do
+                            font:release()
+                        end
+                    end
                 end
             end
         end
