@@ -83,8 +83,7 @@ Event.onInteract = nil
 
 --- *(Override)* Called every frame the player and event are colliding with each other
 ---@param player    Player
----@param DT        number
-function Event:onCollide(player, DT)
+function Event:onCollide(player)
     -- Do stuff every frame the player collides with the object
 end
 
