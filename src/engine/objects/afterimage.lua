@@ -3,17 +3,22 @@
 local AfterImage, super = Class(Object)
 
 function AfterImage:init(sprite, fade, speed)
-    super.init(self, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+    local screen_w, screen_h = love.graphics.getDimensions()
+    screen_w = screen_w / Kristal.getGameScale()
+    screen_h = screen_h / Kristal.getGameScale()
+
+    super.init(self, 0, 0, screen_w, screen_h)
 
     self.sprite = sprite
 
     self.alpha = fade
     self:fadeOutSpeedAndRemove(speed)
 
-    self.canvas = love.graphics.newCanvas(SCREEN_WIDTH, SCREEN_HEIGHT)
+    self.canvas = love.graphics.newCanvas(screen_w, screen_h)
     Draw.pushCanvas(self.canvas)
     love.graphics.push()
     love.graphics.origin()
+    love.graphics.translate(Kristal.getSideOffsets())
     love.graphics.clear()
     love.graphics.applyTransform(self.sprite:getFullTransform())
     Draw.setColor(self.sprite:getDrawColor())
