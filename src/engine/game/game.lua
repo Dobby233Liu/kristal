@@ -121,14 +121,7 @@ function Game:enter(previous_state, save_id, save_name, fade)
     Kristal.callEvent(KRISTAL_EVENT.postInit, self.is_new_file)
 
     if next(DISCORD_RPC_PRESENCE) == nil then
-        Kristal.setPresence({
-            state = Kristal.callEvent(KRISTAL_EVENT.getPresenceState) or ("Playing " .. (Kristal.getModOption("name") or "a mod")),
-            details = Kristal.callEvent(KRISTAL_EVENT.getPresenceDetails),
-            largeImageKey = Kristal.callEvent(KRISTAL_EVENT.getPresenceImage) or "logo",
-            largeImageText = "Kristal v" .. tostring(Kristal.Version),
-            startTimestamp = math.floor(os.time() - self.playtime),
-            instance = 0
-        })
+        self:setPresence()
     end
 end
 
@@ -1126,6 +1119,20 @@ function Game:isWorldHidden()
     end
 
     return false
+end
+
+--- Sets the game's Discord Rich Presence information, using appropriate data from events or engine defaults.
+---
+--- If for some reason you need to manually control what information to set, use [`Kristal.setPresence`](lua://Kristal.setPresence).
+function Game:setPresence()
+    Kristal.setPresence({
+        state = Kristal.callEvent(KRISTAL_EVENT.getPresenceState) or ("Playing " .. (Kristal.getModOption("name") or "a mod")),
+        details = Kristal.callEvent(KRISTAL_EVENT.getPresenceDetails),
+        largeImageKey = Kristal.callEvent(KRISTAL_EVENT.getPresenceImage) or "logo",
+        largeImageText = "Kristal v" .. tostring(Kristal.Version),
+        startTimestamp = math.floor(os.time() - self.playtime),
+        instance = 0
+    })
 end
 
 function Game:update()
